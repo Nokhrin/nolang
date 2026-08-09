@@ -1,0 +1,70 @@
+// functions
+
+// typed
+def void func() {}
+def void func() {return}
+
+def int func(int a, int b) { return a + b }
+int result = func(2,3)
+
+def float multiply(float x, float y) {
+    return x * y
+}
+
+def bool isPositive(int a) {
+  return a > 0
+}
+
+def float areaCircle(int r) {
+  return 3.14 * r * r
+}
+float area = areaCircle(2)
+
+def bool isInRange(int n, int left, int right) {
+  return n >= left and n <= right
+}
+bool isValid = isInRange(5, -10, 10)
+
+// no types
+
+
+def add(a, b) { a + b }
+add(2, 3)
+
+def add(a, b) {
+ a + b }
+add(2, 3)
+
+def add(a, b) {
+ a + b
+ }
+add(2, 3)
+
+def calc(x) { y = x * 2
+  y + 10
+
+
+}
+calc(5)
+
+x = 100
+def modify() {
+  x = 5
+}
+modify()
+x
+
+multiplier = 3
+def multiply(x) { x * multiplier }
+multiply(4)
+
+def rec_call_factorial(n){
+  if n<=1 then {return 1}
+  n*factorial(n-1)
+} factorial(5)
+
+def get_value_allowed_type() {
+    42
+    }
+
+

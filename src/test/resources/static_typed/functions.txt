@@ -1,0 +1,33 @@
+// functions
+print(5)
+sin(0)
+abs(-10)
+abs(-3.14)
+while i <= 5 do
+  pow(i, 2)
+
+def int func() { return 42 }
+
+def void func() {}
+def void func() {return}
+
+def int func(int a, int b) { return a + b }
+int result = func(2,3)
+
+def float multiply(float x, float y) {
+    return x * y
+}
+
+def bool isPositive(int a) {
+  return a > 0
+}
+
+def float areaCircle(int r) {
+  return 3.14 * r * r
+}
+float area = areaCircle(2)
+
+def bool isInRange(int n, int left, int right) {
+  return n >= left and n <= right
+}
+bool isValid = isInRange(5, -10, 10)
