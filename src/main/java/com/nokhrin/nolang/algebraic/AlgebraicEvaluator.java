@@ -41,8 +41,10 @@ public class AlgebraicEvaluator implements Executor {
                 continue;
             }
             try {
-                Value result =evaluate(input);
-                output.println(result);
+                Value result = evaluate(input);
+                if (result!=null){
+                    output.println(result);
+                }
             }catch (Exception e){
                 output.println("Error: " + e);
             }
@@ -55,7 +57,10 @@ public class AlgebraicEvaluator implements Executor {
     public void runFile(String path) {
         try {
             String content = Files.readString(Paths.get(path));
-            evaluate(content);
+            Value result = evaluate(content);
+            if (result!=null){
+                output.println(result);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Error on reading file: " + path, e);
         }
@@ -65,7 +70,7 @@ public class AlgebraicEvaluator implements Executor {
         AlgebraicLexer lexer=new AlgebraicLexer(CharStreams.fromString(input));
         CommonTokenStream tokens=new CommonTokenStream(lexer);
         AlgebraicParser parser = new AlgebraicParser(tokens);
-        ParseTree tree =parser.prog();
+        AlgebraicParser.ProgContext tree =parser.prog();
         AlgebraicEvalVisitor visitor=new AlgebraicEvalVisitor(globalScope);
         return visitor.visit(tree);
     }

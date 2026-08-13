@@ -23,10 +23,14 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Value> {
 
     @Override
     public Value visitProg(AlgebraicParser.ProgContext ctx) {
+        Value lastResult = null;
         for (AlgebraicParser.StatContext statContext : ctx.stat()) {
-            visitStat(statContext);
+            Value result = visitStat(statContext);
+            if (result!=null){
+                lastResult=result;
+            }
         }
-        return null;
+        return lastResult;
     }
 
     @Override
@@ -129,7 +133,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Value> {
         String varName = ctx.ID().getText();
         Optional<Symbol> resolved = scope.resolve(varName);
         if (resolved.isEmpty()) {
-            throw new IllegalStateException("Variable " + varName + " is used before assignment");
+            throw new IllegalStateException("Variable " + varName + " is used before assignment. Line: " + ctx.getStart().getLine());
         }
         return switch (resolved.get()) {
             case VariableSymbol variableSymbol -> scope.fetch(variableSymbol);

@@ -5,7 +5,7 @@ import com.nokhrin.nolang.algebraic.AlgebraicEvaluator;
 import java.io.PrintStream;
 
 /**
- * mvn package
+ * mvn clean package
  * java -jar target/nolang-1.0-SNAPSHOT.jar
  * java -jar target/nolang-1.0-SNAPSHOT.jar src/test/resources/algebraic/algebra.txt
  */

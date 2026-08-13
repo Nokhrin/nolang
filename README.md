@@ -96,3 +96,10 @@ grun com.nokhrin.nolang.StaticTyped prog -gui < src/test/resources/StaticTyped/p
 # токены
 grun com.nokhrin.nolang.StaticTyped tokens -tokens < src/test/resources/StaticTyped/possible_problems.txt
 ```
+
+## Стиль кода
+```shell
+mvn spotless:apply
+mvn spotless:check
+mvn checkstyle:check
+```
