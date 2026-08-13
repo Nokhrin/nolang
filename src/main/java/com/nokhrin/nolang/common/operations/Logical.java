@@ -53,8 +53,7 @@ public class Logical {
     public static Value not(Value operand) {
         return switch (operand) {
             case BoolValue(boolean op) -> new BoolValue(!op);
-            case IntValue _, DoubleValue _ ->
-                    throw new IllegalStateException("Cannot apply to non-bool: " + operand);
+            case IntValue _, DoubleValue _ -> throw new IllegalStateException("Cannot apply to non-bool: " + operand);
         };
     }
 

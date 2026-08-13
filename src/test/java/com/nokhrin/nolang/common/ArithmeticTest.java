@@ -2,8 +2,8 @@ package com.nokhrin.nolang.common;
 
 import com.nokhrin.nolang.common.operations.Arithmetic;
 import com.nokhrin.nolang.common.values.DoubleValue;
-import com.nokhrin.nolang.common.executions.Result;
 import com.nokhrin.nolang.common.values.IntValue;
+import com.nokhrin.nolang.common.values.Value;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -24,7 +24,7 @@ public class ArithmeticTest {
     }
 
     @Test(dataProvider = "additionCases")
-    public void add_validOperands_expectedResult(String description, Result left, Result right, Result expected) {
+    public void add_validOperands_expectedValue(String description, Value left, Value right, Value expected) {
         assertEquals(Arithmetic.add(left, right), expected, description);
     }
 
@@ -40,7 +40,7 @@ public class ArithmeticTest {
     }
 
     @Test(dataProvider = "divisionCases")
-    public void div_validOperands_expectedResult(String description, Result left, Result right, Result expected) {
+    public void div_validOperands_expectedValue(String description, Value left, Value right, Value expected) {
         assertEquals(Arithmetic.div(left, right), expected, description);
     }
 
@@ -56,7 +56,7 @@ public class ArithmeticTest {
     }
 
     @Test(dataProvider = "negationCases")
-    public void neg_validOperand_expectedResult(String description, Result operand, Result expected) {
+    public void neg_validOperand_expectedValue(String description, Value operand, Value expected) {
         assertEquals(Arithmetic.neg(operand), expected, description);
     }
 
@@ -68,7 +68,7 @@ public class ArithmeticTest {
 
     @Test(enabled = false, description = "will be implemented in sprint 3")
     void add_intMaxPlusOne_returnsDouble(){
-        Result result = Arithmetic.add(
+        Value result = Arithmetic.add(
                 new IntValue(Integer.MAX_VALUE),
                 new IntValue(1)
         );
