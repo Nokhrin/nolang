@@ -16,7 +16,42 @@
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <jqwik.version>1.10.1</jqwik.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <logback-classic.version>1.5.18</logback-classic.version>
+        <slf4j-api.version>2.0.17</slf4j-api.version>
+        <testng.version>7.12.0</testng.version>
+        <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <checkstyle.version>13.10.0</checkstyle.version>
+        <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
+        <google-java-format.version>1.35.0</google-java-format.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>jvnet-nexus-releases</id>
+            <url>https://maven.java.net/content/repositories/releases/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jvnet-nexus-releases</id>
+            <url>https://maven.java.net/content/repositories/releases/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
         <dependency>
@@ -27,15 +62,18 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-api.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <version>${logback-classic.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -47,6 +85,99 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <release>${java.version}</release>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addClasspath>true</addClasspath>
+                                <mainClass>Main</mainClass>
+                            </manifest>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${checkstyle-plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>${checkstyle.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless-maven-plugin.version}</version>
+                    <configuration>
+                        <java>
+                            <googleJavaFormat>
+                                <version>${google-java-format.version}</version>
+                                <style>GOOGLE</style>
+                            </googleJavaFormat>
+                            <removeUnusedImports/>
+                            <formatAnnotations/>
+                        </java>
+                        <antlr4>
+                            <includes>
+                                <include>src/main/antlr4/**/*.g4</include>
+                                <include>src/test/antlr4/**/*.g4</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/.*/**</exclude>
+                                <exclude>**/.*</exclude>
+                            </excludes>
+                        </antlr4>
+                        <markdown>
+                            <flexmark/>
+                            <includes>
+                                <include>**/*.md</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/.*/**</exclude>
+                                <exclude>**/.*</exclude>
+                            </excludes>
+                        </markdown>
+                        <formats>
+                            <format>
+                                <trimTrailingWhitespace/>
+                                <endWithNewline/>
+                                <includes>
+                                    <include>asm-projects/**/*.asm</include>
+                                    <include>asm-projects/**/Makefile</include>
+                                    <include>asm-projects/**/.gdbinit</include>
+                                </includes>
+                                <excludes>
+                                    <exclude>**/.*/**</exclude>
+                                    <exclude>**/.*</exclude>
+                                </excludes>
+                            </format>
+                        </formats>
+                    </configuration>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+
         <plugins>
 
             <plugin>
@@ -76,7 +207,9 @@
                 <executions>
                     <execution>
                         <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                         <configuration>
                             <filters>
                                 <filter>
@@ -91,7 +224,8 @@
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.nokhrin.nolang.ReplAlgebraic</mainClass>
                                 </transformer>
                             </transformers>
@@ -101,9 +235,9 @@
             </plugin>
 
             <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
@@ -116,5 +250,74 @@
 
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>spotless-check</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>dev</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>ci-checks</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>spotless-check</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
