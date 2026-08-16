@@ -1,4 +1,7 @@
 package com.nokhrin.nolang.common.values;
 
-public sealed interface Value permits BoolValue, DoubleValue, IntValue {
+import com.nokhrin.nolang.common.Type;
+
+public sealed interface Value permits BoolValue, NumericValue {
+  Type type();
 }

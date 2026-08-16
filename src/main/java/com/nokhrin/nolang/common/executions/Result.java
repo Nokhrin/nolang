@@ -1,4 +1,3 @@
 package com.nokhrin.nolang.common.executions;
 
-public sealed interface Result permits ValueResult, VoidResult {
-}
+public sealed interface Result permits ValueResult, VoidResult {}

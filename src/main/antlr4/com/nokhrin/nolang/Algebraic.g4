@@ -1,29 +1,24 @@
 grammar Algebraic;
 
-prog : stat* EOF ;
-stat : expr NL
-     | expr EOF
-     | NL
-     ;
-expr: ID '=' expr                 # assign
-    | sum             # sumExpr
-    ;
-sum: mul (('+' | '-') mul)* ;
-mul: unary (('*' | '/') unary)* ;
-unary: ('+' | '-') unary
-     | pow
-     ;
-pow: fact ('^' pow)? ;
-fact : prim '!'? ;
-prim : NUM                         # num
-     | ID                          # id
-     | '|' expr '|'                # mod
-     | '(' expr ')'                # group
-     ;
+program     : NL* (statement (NL+ statement)*)? NL* EOF;
+statement   : ID '=' expression | expression;
+expression  : term ;
+term        : factor (('+' | '-') factor)* ;
+factor      : unary (('*' | '/') unary)* ;
+unary       : ('+' | '-') unary | power ;
+power       : factorial ('^' unary)? ;
+factorial   : absolute '!'? ;
+absolute    : '|' term '|' | atom ;
+atom        : number | variable | parentheses ;
+number      : NUM ;
+variable    : ID ;
+parentheses : '(' expression ')' ;
 
-ID    : LETTER (LETTER | DIGIT)*;
-NUM   : DIGIT+ ('.' DIGIT*)? | '.' DIGIT+;
-fragment DIGIT : [0-9];
-fragment LETTER : [a-zA-Z];
-NL : '\r'? '\n' ;
-WS : [ \t]+ ->skip;
+ID          : ALPHA (ALPHA | DIGIT)* ;
+NUM         : DIGIT+ ('.' DIGIT*)? | '.' DIGIT+ ;
+fragment
+DIGIT       : [0-9] ;
+fragment
+ALPHA       : [a-zA-Z_] ;
+NL          : '\r'? '\n' ;
+WS          : [ \t]+ -> skip  ;

@@ -1,4 +1,3 @@
 package com.nokhrin.nolang;
 
-public class ReplDynamicTyped {
-}
+public class ReplDynamicTyped {}

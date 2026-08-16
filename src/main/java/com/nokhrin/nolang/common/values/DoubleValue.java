@@ -1,8 +1,15 @@
 package com.nokhrin.nolang.common.values;
 
-public record DoubleValue(double number) implements Value {
-    @Override
-    public String toString() {
-        return String.valueOf(number);
-    }
+import com.nokhrin.nolang.common.Type;
+
+public record DoubleValue(double number) implements NumericValue {
+  @Override
+  public String toString() {
+    return String.valueOf(number);
+  }
+
+  @Override
+  public Type type() {
+    return Type.FLOAT;
+  }
 }
