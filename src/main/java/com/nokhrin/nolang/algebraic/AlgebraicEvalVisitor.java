@@ -2,104 +2,136 @@ package com.nokhrin.nolang.algebraic;
 
 import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
-import com.nokhrin.nolang.common.definitions.VariableSymbol;
 import com.nokhrin.nolang.common.executions.Result;
 import com.nokhrin.nolang.common.executions.Scope;
 import com.nokhrin.nolang.common.executions.ValueResult;
 import com.nokhrin.nolang.common.executions.VoidResult;
+import com.nokhrin.nolang.common.operations.*;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.List;
+
+import static com.nokhrin.nolang.common.values.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Result> {
-  private final Scope scope;
+    private final Scope scope;
 
-  public AlgebraicEvalVisitor(Scope scope) {
-    this.scope = scope;
-  }
-
-  @Override
-  public Result visitProgram(AlgebraicParser.ProgramContext ctx) {
-    return program(ctx);
-  }
-
-  private Result program(AlgebraicParser.ProgramContext ctx) {
-    Result result = new VoidResult();
-    for (AlgebraicParser.StatementContext statementContext : ctx.statement()) {
-      result = statement(statementContext);
+    public AlgebraicEvalVisitor(Scope scope) {
+        this.scope = scope;
     }
-    return result;
-  }
 
-  private Result statement(AlgebraicParser.StatementContext ctx) {
-    if (ctx.ID() != null) {
-      Value value = expression(ctx.expression());
-      VariableSymbol symbol = new VariableSymbol(ctx.ID().getText(), value.type());
-      scope.define(symbol, value);
-      return new VoidResult();
+    @Override
+    public Result visitProgram(AlgebraicParser.ProgramContext ctx) {
+        Result lastResult = new VoidResult();
+        for (AlgebraicParser.StatementContext statement : ctx.statement()) {
+            lastResult = visit(statement);
+        }
+        return lastResult;
     }
-    return new ValueResult(expression(ctx.expression()));
-  }
 
-  private Value expression(AlgebraicParser.ExpressionContext ctx) {
-    return term(ctx.term());
-  }
+    @Override
+    public Result visitStatement(AlgebraicParser.StatementContext ctx) {
+        return visit(ctx.assignment());
+    }
 
-  private Value term(AlgebraicParser.TermContext term) {
-    throw new UnsupportedOperationException("TODO");
-  }
+    @Override
+    public Result visitAssignStatement(AlgebraicParser.AssignStatementContext ctx) {
+        String varName = ctx.ID().getText();
+        Value varValue = visit(ctx.term()).asValue();
 
-  @Override
-  public Result visitStatement(AlgebraicParser.StatementContext ctx) {
-    return statement(ctx);
-  }
+        if (scope.contains(varName)) {
+            scope.assign(varName, varValue);
+        } else {
+            scope.declare(varName, varValue);
+        }
 
-  @Override
-  public Result visitExpression(AlgebraicParser.ExpressionContext ctx) {
-    return new ValueResult(expression(ctx));
-  }
+        return new VoidResult();
+    }
 
-  @Override
-  public Result visitTerm(AlgebraicParser.TermContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+    @Override
+    public Result visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
+        return visit(ctx.term());
+    }
 
-  @Override
-  public Result visitFactor(AlgebraicParser.FactorContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+    @Override
+    public Result visitTerm(AlgebraicParser.TermContext ctx) {
 
-  @Override
-  public Result visitUnary(AlgebraicParser.UnaryContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+        List<NumericValue> values = ctx.factor().stream()
+            .map(this::visit)
+            .map(Result::asNumericValue)
+            .toList();
 
-  @Override
-  public Result visitPower(AlgebraicParser.PowerContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+        List<BinaryOperation> operations = ctx.children.stream()
+            .filter(TerminalNode.class::isInstance)
+            .map(ParseTree::getText)
+            .map(BinaryOperation::fromSymbol)
+            .toList();
 
-  @Override
-  public Result visitFactorial(AlgebraicParser.FactorialContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+        return new ValueResult(Folds.left(values, operations));
+    }
 
-  @Override
-  public Result visitAbsolute(AlgebraicParser.AbsoluteContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+    @Override
+    public Result visitFactor(AlgebraicParser.FactorContext ctx) {
 
-  @Override
-  public Result visitNumber(AlgebraicParser.NumberContext ctx) {
-    return new ValueResult(NumericValue.parse(ctx.NUM().getText()));
-  }
+        List<NumericValue> values = ctx.unary().stream()
+            .map(this::visit)
+            .map(Result::asNumericValue)
+            .toList();
 
-  @Override
-  public Result visitVariable(AlgebraicParser.VariableContext ctx) {
-    throw new UnsupportedOperationException("TODO");
-  }
+        List<BinaryOperation> operations = ctx.children.stream()
+            .filter(TerminalNode.class::isInstance)
+            .map(ParseTree::getText)
+            .map(BinaryOperation::fromSymbol)
+            .toList();
 
-  @Override
-  public Result visitParentheses(AlgebraicParser.ParenthesesContext ctx) {
-    return visit(ctx.expression());
-  }
+        return new ValueResult(Folds.left(values, operations));
+    }
+
+    @Override
+    public Result visitUnaryExpression(AlgebraicParser.UnaryExpressionContext ctx) {
+        PrefixOperation operator = PrefixOperation.fromSymbol(ctx.getChild(0).getText());
+        NumericValue number = visit(ctx.unary()).asNumericValue();
+        return new ValueResult(operator.apply(number));
+    }
+
+    @Override
+    public Result visitPowerExpression(AlgebraicParser.PowerExpressionContext ctx) {
+        NumericValue base = visit(ctx.factorial()).asNumericValue();
+        NumericValue exponent = visit(ctx.unary()).asNumericValue();
+        return new ValueResult(BinaryOperation.POW.apply(base, exponent));
+    }
+
+    @Override
+    public Result visitAbsoluteAtom(AlgebraicParser.AbsoluteAtomContext ctx) {
+        NumericValue value = visit(ctx.term()).asNumericValue();
+        return new ValueResult(InfixOperation.ABSOLUTE.apply(value));
+    }
+
+    @Override
+    public Result visitFactorial(AlgebraicParser.FactorialContext ctx) {
+        NumericValue value = visit(ctx.atom()).asNumericValue();
+        if (ctx.getChildCount() == 2) {
+            return new ValueResult(PostfixOperation.FACTORIAL.apply(value));
+        }
+        return new ValueResult(value);
+    }
+
+    @Override
+    public Result visitParenthesesAtom(AlgebraicParser.ParenthesesAtomContext ctx) {
+        return visit(ctx.term());
+    }
+
+    @Override
+    public Result visitNumberAtom(AlgebraicParser.NumberAtomContext ctx) {
+        String lexeme = ctx.NUM().getText();
+        return new ValueResult(parseNumber(lexeme));
+    }
+
+    @Override
+    public Result visitVariableAtom(AlgebraicParser.VariableAtomContext ctx) {
+        return new ValueResult(scope.fetch(ctx.ID().getText()));
+    }
 }

@@ -2,6 +2,13 @@ package com.nokhrin.nolang.common.values;
 
 import com.nokhrin.nolang.common.Type;
 
-public sealed interface Value permits BoolValue, NumericValue {
-  Type type();
+public sealed interface Value permits NumericValue, BoolValue {
+
+    default NumericValue asNumeric() {
+        return switch (this) {
+            case NumericValue numericValue -> numericValue;
+            case BoolValue boolValue -> throw new IllegalStateException("Expected numeric, got boolean: " + boolValue);
+        };
+    }
+
 }

@@ -1,18 +1,21 @@
 grammar Algebraic;
 
-program     : NL* (statement (NL+ statement)*)? NL* EOF;
-statement   : ID '=' expression | expression;
-expression  : term ;
+program     : NL* (statement)* EOF;
+statement   : assignment NL* ;
+assignment  : ID '=' term             #assignStatement
+            | term                    #termStatement
+            ;
 term        : factor (('+' | '-') factor)* ;
 factor      : unary (('*' | '/') unary)* ;
-unary       : ('+' | '-') unary | power ;
-power       : factorial ('^' unary)? ;
-factorial   : absolute '!'? ;
-absolute    : '|' term '|' | atom ;
-atom        : number | variable | parentheses ;
-number      : NUM ;
-variable    : ID ;
-parentheses : '(' expression ')' ;
+unary       : ('+' | '-') unary       #unaryExpression
+            | factorial ('^' unary)?  #powerExpression
+            ;
+factorial   : atom '!'? ;
+atom        : '|' term '|'            #absoluteAtom
+            | '(' term ')'            #parenthesesAtom
+            | NUM                     #numberAtom
+            | ID                      #variableAtom
+            ;
 
 ID          : ALPHA (ALPHA | DIGIT)* ;
 NUM         : DIGIT+ ('.' DIGIT*)? | '.' DIGIT+ ;

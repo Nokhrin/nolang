@@ -1,143 +1,164 @@
 package com.nokhrin.nolang.common.operations;
 
-import com.nokhrin.nolang.common.values.DoubleValue;
 import com.nokhrin.nolang.common.values.IntValue;
-import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.values.NumericValue;
+import com.nokhrin.nolang.common.values.RealValue;
 
 public class Arithmetic {
 
-  private Arithmetic() {
-    throw new UnsupportedOperationException("Utility class");
-  }
-
-  public static Value neg(Value number) {
-    return switch (number) {
-      case IntValue(long n) -> new IntValue(-n);
-      case DoubleValue(double n) -> new DoubleValue(-n);
-      default -> throw new IllegalStateException("Unexpected number: " + number);
-    };
-  }
-
-  public static Value abs(Value number) {
-    return switch (number) {
-      case IntValue(long n) -> new IntValue(Math.abs(n));
-      case DoubleValue(double n) -> new DoubleValue(Math.abs(n));
-      default -> throw new IllegalStateException("Unexpected number: " + number);
-    };
-  }
-
-  public static Value add(Value left, Value right) {
-    return switch (left) {
-      case IntValue(long l) ->
-          switch (right) {
-            case IntValue(long r) -> new IntValue(l + r);
-            case DoubleValue(double r) -> new DoubleValue(l + r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      case DoubleValue(double l) ->
-          switch (right) {
-            case IntValue(long r) -> new DoubleValue(l + r);
-            case DoubleValue(double r) -> new DoubleValue(l + r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      default -> throw new IllegalStateException("Unexpected number: " + left);
-    };
-  }
-
-  public static Value sub(Value left, Value right) {
-    return switch (left) {
-      case IntValue(long l) ->
-          switch (right) {
-            case IntValue(long r) -> new IntValue(l - r);
-            case DoubleValue(double r) -> new DoubleValue(l - r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      case DoubleValue(double l) ->
-          switch (right) {
-            case IntValue(long r) -> new DoubleValue(l - r);
-            case DoubleValue(double r) -> new DoubleValue(l - r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      default -> throw new IllegalStateException("Unexpected number: " + left);
-    };
-  }
-
-  public static Value mul(Value left, Value right) {
-    return switch (left) {
-      case IntValue(long l) ->
-          switch (right) {
-            case IntValue(long r) -> new IntValue(l * r);
-            case DoubleValue(double r) -> new DoubleValue(l * r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      case DoubleValue(double l) ->
-          switch (right) {
-            case IntValue(long r) -> new DoubleValue(l * r);
-            case DoubleValue(double r) -> new DoubleValue(l * r);
-            default -> throw new IllegalStateException("Unexpected number: " + right);
-          };
-      default -> throw new IllegalStateException("Unexpected number: " + left);
-    };
-  }
-
-  public static Value div(Value left, Value right) {
-    double divisor = toDouble(right);
-    if (divisor == 0) {
-      throw new ArithmeticException("Division by zero");
+    private Arithmetic() {
+        throw new UnsupportedOperationException("Utility class");
     }
-    double result = toDouble(left) / divisor;
-    return new DoubleValue(result);
-  }
 
-  public static Value pow(Value left, Value right) {
-    double base = toDouble(left);
-    double exponent = toDouble(right);
-
-    if (base == 0.0 && exponent < 0.0) {
-      throw new ArithmeticException("Division by zero in power operation");
+    public static NumericValue neg(NumericValue numericValue) {
+        return switch (numericValue) {
+            case IntValue value -> new IntValue(-value.number());
+            case RealValue value -> new RealValue(-value.number());
+        };
     }
-    boolean exponentIsInteger = Double.isFinite(exponent) && exponent == Math.floor(exponent);
-    if (base < 0.0 && !exponentIsInteger) {
-      throw new ArithmeticException(
-          "Power of negative base with non-integer exponent is not defined");
+
+    public static NumericValue abs(NumericValue numericValue) {
+        return switch (numericValue) {
+            case IntValue value -> new IntValue(Math.abs(value.number()));
+            case RealValue value -> new RealValue(Math.abs(value.number()));
+        };
     }
-    return new DoubleValue(Math.pow(base, exponent));
-  }
 
-  public static Value fact(Value operand) {
-    return switch (operand) {
-      case IntValue(long n) -> {
-        if (n < 0) {
-          throw new ArithmeticException("Factorial of negative number");
-        }
-        long result = 1;
-        for (long i = 2; i <= n; i++) {
-          result *= i;
-        }
-        yield new IntValue(result);
-      }
-      case DoubleValue(double n) -> {
-        if (n != Math.floor(n)) {
-          throw new ArithmeticException("Factorial of non-integer");
-        }
-        if (n < 0) {
-          throw new ArithmeticException("Factorial of negative number");
-        }
-        long result = 1;
-        for (long i = 2; i <= n; i++) {
-          result *= i;
-        }
-        yield new IntValue(result);
-      }
-      default -> throw new ArithmeticException("Factorial is not supported for: " + operand);
-    };
-  }
+    public static NumericValue add(NumericValue left, NumericValue right) {
+        return switch (left) {
+            case IntValue l -> switch (right) {
+                case IntValue r -> new IntValue(l.number() + r.number());
+                case RealValue r -> new RealValue(l.number() + r.number());
+            };
 
-  public static double toDouble(Value valueNumber) {
-    return switch (valueNumber) {
-      case IntValue intValue -> intValue.number();
-      case DoubleValue doubleValue -> doubleValue.number();
-      default -> throw new IllegalStateException("Unexpected number: " + valueNumber);
-    };
-  }
+            case RealValue l -> switch (right) {
+                case IntValue r -> new RealValue(l.number() + r.number());
+                case RealValue r -> new RealValue(l.number() + r.number());
+            };
+
+        };
+    }
+
+    public static NumericValue sub(NumericValue left, NumericValue right) {
+        return switch (left) {
+            case IntValue l -> switch (right) {
+                case IntValue r -> new IntValue(l.number() - r.number());
+                case RealValue r -> new RealValue(l.number() - r.number());
+            };
+
+            case RealValue l -> switch (right) {
+                case IntValue r -> new RealValue(l.number() - r.number());
+                case RealValue r -> new RealValue(l.number() - r.number());
+            };
+
+        };
+    }
+
+    public static NumericValue mul(NumericValue left, NumericValue right) {
+        return switch (left) {
+            case IntValue l -> switch (right) {
+                case IntValue r -> new IntValue(l.number() * r.number());
+                case RealValue r -> new RealValue(l.number() * r.number());
+            };
+
+            case RealValue l -> switch (right) {
+                case IntValue r -> new RealValue(l.number() * r.number());
+                case RealValue r -> new RealValue(l.number() * r.number());
+            };
+
+        };
+    }
+
+    public static NumericValue div(NumericValue left, NumericValue right) {
+        double divisor = switch (right) {
+            case IntValue r -> r.number();
+            case RealValue r -> r.number();
+        };
+        if (divisor == 0.0) {
+            throw new ArithmeticException("Division by zero");
+        }
+
+        return switch (left) {
+            case IntValue l -> switch (right) {
+                case IntValue r -> new IntValue(l.number() / r.number());
+                case RealValue r -> new RealValue(l.number() / r.number());
+            };
+
+            case RealValue l -> switch (right) {
+                case IntValue r -> new RealValue(l.number() / r.number());
+                case RealValue r -> new RealValue(l.number() / r.number());
+            };
+
+        };
+    }
+
+    public static NumericValue pow(NumericValue left, NumericValue right) {
+        double baseTest = switch (left) {
+            case IntValue l -> l.number();
+            case RealValue l -> l.number();
+        };
+        double exponentTest = switch (right) {
+            case IntValue r -> r.number();
+            case RealValue r -> r.number();
+        };
+        if (baseTest == 0.0 && exponentTest < 0.0) {
+            throw new ArithmeticException("Division by zero in power operation");
+        }
+        boolean exponentIsInteger = Double.isFinite(exponentTest) && exponentTest == Math.floor(exponentTest);
+        if (baseTest < 0.0 && !exponentIsInteger) {
+            throw new ArithmeticException(
+                "Power of negative base with non-integer exponent is not defined");
+        }
+
+        return switch (left) {
+            case IntValue base -> switch (right) {
+                case IntValue exponent -> {
+                    if (exponent.number() < 0) {
+                        yield new RealValue(Math.pow(base.number(), exponent.number()));
+                    }
+                    long result = 1;
+                    for (long i = 0; i < exponent.number(); i++) {
+                        result *= base.number();
+                    }
+                    yield new IntValue(result);
+                }
+                case RealValue exponent -> new RealValue(Math.pow(base.number(), exponent.number()));
+            };
+
+            case RealValue base -> switch (right) {
+                case IntValue exponent -> new RealValue(Math.pow(base.number(), exponent.number()));
+                case RealValue exponent -> new RealValue(Math.pow(base.number(), exponent.number()));
+            };
+
+        };
+    }
+
+    public static NumericValue fact(NumericValue numericValue) {
+        return switch (numericValue) {
+            case IntValue(long n) -> {
+                if (n < 0) {
+                    throw new ArithmeticException("Factorial of negative number");
+                }
+                long result = 1;
+                for (long i = 2; i <= n; i++) {
+                    result *= i;
+                }
+                yield new IntValue(result);
+            }
+            case RealValue(double n) -> {
+                if (n != Math.floor(n)) {
+                    throw new ArithmeticException("Factorial of non-integer");
+                }
+                if (n < 0) {
+                    throw new ArithmeticException("Factorial of negative number");
+                }
+                long result = 1;
+                for (long i = 2; i <= n; i++) {
+                    result *= i;
+                }
+                yield new IntValue(result);
+            }
+        };
+    }
+
 }
