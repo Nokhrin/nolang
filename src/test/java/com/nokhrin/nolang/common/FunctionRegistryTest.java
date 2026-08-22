@@ -8,7 +8,7 @@ import java.io.PrintStream;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class FunctionsTest {
+public class FunctionRegistryTest {
   ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
   PrintStream testOutput = new PrintStream(outputStream);
   FunctionRegistry functionRegistry = new FunctionRegistry(testOutput);

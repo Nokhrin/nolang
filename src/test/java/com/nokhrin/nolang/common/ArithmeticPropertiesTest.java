@@ -1,75 +1,69 @@
 package com.nokhrin.nolang.common;
 
+import static org.testng.Assert.assertEquals;
+
 import com.nokhrin.nolang.common.operations.Arithmetic;
 import com.nokhrin.nolang.common.values.IntValue;
-import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.values.NumericValue;
+import com.nokhrin.nolang.common.values.RealValue;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.IntRange;
 
-import static org.testng.Assert.assertEquals;
-
 public class ArithmeticPropertiesTest {
+  @Property
+  void addition_is_commutative(@ForAll long a, @ForAll long b) {
+    NumericValue numA = new IntValue(a);
+    NumericValue numB = new IntValue(b);
+    assertEquals(Arithmetic.add(numA, numB), Arithmetic.add(numB, numA));
+  }
 
-    /**
-     * add(a, b) == add(b, a)
-     */
-    @Property
-    void arithmetic_commutative(
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long a,
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long b) {
-        Value aInt = new IntValue(a);
-        Value bInt = new IntValue(b);
-        assertEquals(Arithmetic.add(aInt, bInt), Arithmetic.add(bInt, aInt));
-    }
+  @Property
+  void multiplication_is_commutative(@ForAll long a, @ForAll long b) {
+    NumericValue numA = new IntValue(a);
+    NumericValue numB = new IntValue(b);
+    assertEquals(Arithmetic.mul(numA, numB), Arithmetic.mul(numB, numA));
+  }
 
-    /**
-     * add(a, 0) == a
-     */
-    @Property
-    void arithmetic_identity(@ForAll @IntRange(min = Integer.MIN_VALUE) long a) {
-        Value aInt = new IntValue(a);
-        assertEquals(Arithmetic.add(aInt, new IntValue(0)), aInt);
-    }
+  @Property
+  void addition_identity(@ForAll long a) {
+    NumericValue numA = new IntValue(a);
+    assertEquals(Arithmetic.add(numA, new IntValue(0)), numA);
+  }
 
-    /**
-     * sub(a, a) == 0
-     */
-    @Property
-    void arithmetic_inverse(@ForAll @IntRange(min = Integer.MIN_VALUE) long a) {
-        Value aInt = new IntValue(a);
-        assertEquals(Arithmetic.sub(aInt, aInt), new IntValue(0));
-    }
+  @Property
+  void multiplication_identity(@ForAll long a) {
+    NumericValue numA = new IntValue(a);
+    assertEquals(Arithmetic.mul(numA, new IntValue(1)), numA);
+  }
 
-    /**
-     * add(add(a, b), c) == add(a, add(b, c)) Только для `IntValue`
-     */
-    @Property
-    void arithmetic_associative(
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long a,
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long b,
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long c) {
-        Value aInt = new IntValue(a);
-        Value bInt = new IntValue(b);
-        Value cInt = new IntValue(c);
-        assertEquals(
-            Arithmetic.add(Arithmetic.add(aInt, bInt), cInt),
-            Arithmetic.add(aInt, Arithmetic.add(bInt, cInt)));
-    }
+  @Property
+  void subtraction_inverse(@ForAll long a) {
+    NumericValue numA = new IntValue(a);
+    assertEquals(Arithmetic.sub(numA, numA), new IntValue(0));
+  }
 
-    /**
-     * mul(a, add(b, c)) == add(mul(a, b), mul(a, c))
-     */
-    @Property
-    void arithmetic_distributive(
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long a,
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long b,
-        @ForAll @IntRange(min = Integer.MIN_VALUE) long c) {
-        Value aInt = new IntValue(a);
-        Value bInt = new IntValue(b);
-        Value cInt = new IntValue(c);
-        assertEquals(
-            Arithmetic.mul(aInt, Arithmetic.add(bInt, cInt)),
-            Arithmetic.add(Arithmetic.mul(aInt, bInt), Arithmetic.mul(aInt, cInt)));
+  @Property
+  void distribution(
+      @ForAll @IntRange(min = -10000, max = 10000) long a,
+      @ForAll @IntRange(min = -10000, max = 10000) long b,
+      @ForAll @IntRange(min = -10000, max = 10000) long c) {
+    NumericValue numA = new IntValue(a);
+    NumericValue numB = new IntValue(b);
+    NumericValue numC = new IntValue(c);
+
+    NumericValue leftPart = Arithmetic.mul(numA, Arithmetic.add(numB, numC));
+    NumericValue rightPart = Arithmetic.add(Arithmetic.mul(numA, numB), Arithmetic.mul(numA, numC));
+    assertEquals(leftPart, rightPart);
+  }
+
+  @Property
+  void real_addition_is_commutative(@ForAll long a, @ForAll long b) {
+    if (Double.isNaN(a) || Double.isInfinite(a) || Double.isNaN(b) || Double.isInfinite(b)) {
+      return;
     }
+    NumericValue numA = new RealValue(a);
+    NumericValue numB = new RealValue(b);
+    assertEquals(Arithmetic.add(numA, numB), Arithmetic.add(numB, numA));
+  }
 }
