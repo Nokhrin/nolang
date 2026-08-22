@@ -1,6 +1,6 @@
 package com.nokhrin.nolang.algebraic;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.nokhrin.nolang.common.executions.Result;
 import com.nokhrin.nolang.common.executions.ValueResult;
@@ -36,10 +36,10 @@ public class AlgebraicInterpreterTest {
 
     String reassignment =
         """
-            x = %d
-            x = %d
-            x
-            """
+                x = %d
+                x = %d
+                x
+                """
             .formatted(val1, val2);
     assertEquals(interpreter.evaluate(reassignment), new ValueResult(new IntValue(val2)));
   }

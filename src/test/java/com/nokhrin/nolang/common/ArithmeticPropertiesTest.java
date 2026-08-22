@@ -1,6 +1,6 @@
 package com.nokhrin.nolang.common;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.nokhrin.nolang.common.operations.Arithmetic;
 import com.nokhrin.nolang.common.values.IntValue;

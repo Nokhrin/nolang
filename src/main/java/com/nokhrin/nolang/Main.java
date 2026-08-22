@@ -1,18 +1,22 @@
 package com.nokhrin.nolang;
 
+import java.util.Arrays;
+
 public class Main {
   static void main(String[] args) {
-    String runtimeName = "algebraic";
+    String executionMode = "algebraic";
+    String[] runnerArgs = new String[0];
     if (args.length > 0) {
-      runtimeName = args[0];
+      executionMode = args[0];
+      runnerArgs = Arrays.copyOfRange(args, 1, args.length);
     }
 
-    switch (runtimeName) {
-      case "algebraic", "1" -> AlgebraicRunner.run(args);
-      case "dynamic", "2" -> DynamicTypedRunner.run(args);
-      case "static", "3" -> StaticTypedRunner.run(args);
+    switch (executionMode) {
+      case "algebraic", "1" -> AlgebraicRunner.run(runnerArgs);
+      case "dynamic", "2" -> DynamicTypedRunner.run(runnerArgs);
+      case "static", "3" -> StaticTypedRunner.run(runnerArgs);
       default -> {
-        System.err.println("Unknown runtime: " + runtimeName);
+        System.err.println("Unknown execution mode: " + executionMode);
         System.exit(1);
       }
     }

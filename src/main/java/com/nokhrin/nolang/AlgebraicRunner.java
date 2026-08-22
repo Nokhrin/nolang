@@ -10,22 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
 
-/**
- * Точка входа для REPL алгебраического калькулятора.
- *
- * <p>Примеры использования:
- *
- * {@snippet lang = shell:
- *   # Сборка проекта
- *   mvn clean package
- *
- *   # Интерактивный режим
- *   java -jar target/nolang-1.0-SNAPSHOT.jar
- *
- *   # Пакетный режим
- *   java -jar target/nolang-1.0-SNAPSHOT.jar src/test/resources/algebraic/algebra.txt
- * }
- */
+/** Точка входа для REPL алгебраического калькулятора. */
 public class AlgebraicRunner {
   static void run(String[] args) {
     InputStream inputStream = System.in;
