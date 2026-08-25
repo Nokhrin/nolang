@@ -1,64 +1,95 @@
 grammar DynamicTyped;
 
-prog : (NEWLINE* stat NEWLINE*)* EOF ;
-stat : assignStat
-     | ifStat
-     | whileStat
-     | breakStat
-     | continueStat
-     | returnStat
-     | funcDef
-     | block
-     | expr
-     ;
+program     : NL* (declaration NL*)* EOF ;
+declaration : 'def' funcSignature               #funcDecl
+            | returnType ID '=' expression      #typedVarDecl
+            | ID '=' expression                 #untypedVarDecl
+            | statement                         #statementDecl
+            ;
 
-funcDef : 'def' funcSignature ;
-funcSignature : type? ID '(' formalParameters? ')' block ;
-formalParameters : type? ID (',' type? ID)* ;
+funcSignature : returnType ID '(' parameters ')' block    #typedFuncWithParams
+              | returnType ID '(' ')' block               #typedFuncNoParams
+              | ID '(' parameters ')' block         #untypedFuncWithParams
+              | ID '(' ')' block                    #untypedFuncNoParams
+              ;
+arguments  : expression (',' expression)* ;
+parameters : parameter (',' parameter)* ;
+parameter  : parameterType ID               #typedParameter
+           | ID                             #untypedParameter
+           ;
 
-block: '{' NEWLINE* (stat NEWLINE*)* '}' ;
-returnStat : 'return' expr? ;
+parameterType : INT_TYPE
+              | REAL_TYPE
+              | BOOL_TYPE
+              ;
 
-assignStat : type? ID '=' expr ;
+returnType : INT_TYPE
+           | REAL_TYPE
+           | BOOL_TYPE
+           | VOID_TYPE
+           ;
 
-type : INT_TYPE
-     | FLOAT_TYPE
-     | BOOL_TYPE
-     | VOID_TYPE
-     ;
+statement : expression
+          | breakStatement
+          | continueStatement
+          | whileStatement
+          | ifStatement
+          | return
+          | block
+          ;
 
-ifStat : 'if' expr 'then' NEWLINE* stat ('else' NEWLINE* stat)? ;
-whileStat : 'while' expr 'do' NEWLINE* stat ;
-breakStat : 'break' ;
-continueStat : 'continue' ;
+ifStatement : 'if' expression 'then' NL* statement ('else' NL* statement)   #ifElseStat
+            | 'if' expression 'then' NL* statement                          #ifStat
+            ;
 
-callExpr : ID '(' arguments? ')' ;
-arguments : expr (',' expr)* ;
+breakStatement : 'break' ;
+continueStatement : 'continue' ;
+whileStatement : 'while' expression 'do' NL* statement ;
+block: '{' NL* (statement NL*)* '}' ;
+return : 'return' expression        #returnValue
+       | 'return'                   #returnVoid
+       ;
 
-expr: ternary ;
-ternary: or ('?' ternary ':' ternary)? ;
-or: and ('OR' and)* ;
-and: comp ('AND' comp)* ;
-comp: addSub (('==' | '!=' | '>' | '<' | '>=' | '<=') addSub)? ;
-addSub:  mulDiv (('+' | '-') mulDiv)* ;
-mulDiv:  unary (('*' | '/') unary)* ;
-unary : 'NOT' unary      #not
-      | '-' unary  #neg
-      | '+' unary  #pos
-      | atom       #prime
-      ;
+expression  : assignment ;
+assignment  : ID '=' assignment     #assignVar
+            | ternary               #assignExpr
+            ;
+ternary     : logicalOr '?' ternary ':' ternary    #ternaryExpr
+            | logicalOr                            #orExpr
+            ;
+logicalOr   : logicalAnd ('OR' logicalAnd)* ;
+logicalAnd  : comparison ('AND' comparison)*       #andExpr
+            ;
+comparison  : term ('==' | '!=' |
+                 '>' | '<' | '>=' | '<=') term     #comparisonExpr
+            | term                                 #additiveExpr
+            ;
 
-atom : FLOAT                #float
-     | INT                 #int
-     | BOOL                 #bool
-     | VOID                 #void
-     | callExpr             #funcCall
-     | ID                 #id
-     | '(' expr ')'       #paren
-     ;
+term    :  factor (('+' | '-') factor)*  #multiplicativeExpr
+        ;
+factor  :  unary (('*' | '/') unary)*
+        ;
+unary   : 'NOT' unary               #unaryNotExpression
+        | '+' unary                 #unaryPlusExpression
+        | '-' unary                 #unaryMinusExpression
+        | atom '^' unary            #powerExpression
+        | atom '!'                  #factorialExpression
+        | atom                      #atomExpression
+        ;
+
+atom        : '|' assignment '|'    #absoluteAtom
+            | '(' ternary ')'       #parenthesesAtom
+            | ID '(' arguments ')'  #callWithArgsAtom
+            | ID '(' ')'            #callNoArgsAtom
+            | FLOAT                 #floatAtom
+            | INT                   #intAtom
+            | BOOL                  #boolAtom
+            | VOID                  #voidAtom
+            | ID                    #variableAtom
+            ;
 
 INT_TYPE : 'int' ;
-FLOAT_TYPE : 'float' ;
+REAL_TYPE : 'float' ;
 BOOL_TYPE : 'bool' ;
 VOID_TYPE : 'void' ;
 BOOL : 'true' | 'false' ;
@@ -68,8 +99,10 @@ FLOAT : DIGIT+ '.' DIGIT* ([Ee] ('+' | '-')? DIGIT+)?
       | DIGIT+ [Ee] ('+' | '-')? DIGIT+
       | '.' DIGIT+ ;
 INT : DIGIT+ ;
-fragment ALPHA : [a-zA-Z] ;
-fragment DIGIT : [0-9] ;
-NEWLINE : '\r'? '\n' ;
+fragment
+ALPHA : [a-zA-Z] ;
+fragment
+DIGIT : [0-9] ;
+NL : '\r'? '\n' ;
 COMMENT : '//' ~[\r\n]* -> skip ;
-WS : [ \t\n]+ -> skip ;
+WS : [ \t]+ -> skip ;

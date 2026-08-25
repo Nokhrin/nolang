@@ -1,0 +1,36 @@
+// Variable declarations with compound expressions
+int x = -5
+float y = -x^2
+float z = 5.
+bool flag = x > 0
+
+// Untyped variable declarations
+a = -x^2
+b = f()!
+
+// Function returning unary power expression
+def float calc(float x) {
+    return -x^2
+}
+
+// Function utilizing postfix factorial on recursive call
+def int fact(int n) {
+    if n <= 1 then return 1
+    return n * fact(n - 1)
+}
+
+// Function returning function call factorial
+def int get_fact() {
+    return fact(5)!
+}
+
+// Function with conditional returning unary expressions
+def float abs_val(float x) {
+    if x > 0 then return x
+    return -x
+}
+
+// Execution of declared functions
+float res1 = calc(-3.0)
+int res2 = fact(5)
+int res3 = get_fact()

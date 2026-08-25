@@ -62,7 +62,7 @@
    - Выполнение из файла:
 
      ```shell
-     java -jar target/nolang-1.0-SNAPSHOT.jar algebraic src/test/resources/algebraic/algebra.txt
+     java -jar target/nolang-1.0-SNAPSHOT.jar algebraic src/test/resources/algebraic/statements.txt
      ```
 
 ---
