@@ -2,45 +2,68 @@ package com.nokhrin.nolang.algebraic;
 
 import com.nokhrin.nolang.AlgebraicLexer;
 import com.nokhrin.nolang.AlgebraicParser;
-import com.nokhrin.nolang.common.errors.SyntaxException;
-import com.nokhrin.nolang.common.executions.Result;
-import com.nokhrin.nolang.common.executions.Scope;
-import java.io.PrintStream;
+import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.functional.Either;
+import com.nokhrin.nolang.functional.Environment;
+import com.nokhrin.nolang.functional.EvalError;
+import com.nokhrin.nolang.functional.Result;
 import org.antlr.v4.runtime.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class AlgebraicInterpreter {
-  private final PrintStream output;
-  private final Scope scope;
 
-  public AlgebraicInterpreter(PrintStream output) {
-    this.output = output;
-    this.scope = new Scope(null);
-  }
+    public Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parseProgram(String input) {
+        CharStream inputStream = CharStreams.fromString(input);
 
-  public Result evaluate(String input) {
-    CharStream inputStream = CharStreams.fromString(input);
-    AlgebraicLexer lexer = new AlgebraicLexer(inputStream);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
-    AlgebraicParser parser = new AlgebraicParser(tokens);
+        List<EvalError.SyntaxError> syntaxErrors = new ArrayList<>();
+        BaseErrorListener errorListener =
+            new BaseErrorListener() {
+                @Override
+                public void syntaxError(
+                    Recognizer<?, ?> recognizer,
+                    Object offendingSymbol,
+                    int line,
+                    int column,
+                    String message,
+                    RecognitionException e) {
+                    syntaxErrors.add(new EvalError.SyntaxError("Line " + line + ":" + column + " - " + message));
+                }
+            };
 
-    parser.removeErrorListeners();
-    parser.addErrorListener(
-        new BaseErrorListener() {
-          @Override
-          public void syntaxError(
-              Recognizer<?, ?> recognizer,
-              Object offendingSymbol,
-              int line,
-              int charPositionInLine,
-              String msg,
-              RecognitionException e) {
-            throw new SyntaxException(
-                "Line " + line + ":" + charPositionInLine + ":" + msg + "\n" + e);
-          }
-        });
+        AlgebraicLexer lexer = new AlgebraicLexer(inputStream);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        AlgebraicParser parser = new AlgebraicParser(tokens);
 
-    AlgebraicParser.ProgramContext tree = parser.program();
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errorListener);
+        parser.removeErrorListeners();
+        parser.addErrorListener(errorListener);
 
-    return new AlgebraicEvalVisitor(scope).visit(tree);
-  }
+        AlgebraicParser.ProgramContext tree = parser.program();
+
+        if (syntaxErrors.isEmpty()) {
+            return Either.right(tree);
+        }
+        return Either.left(syntaxErrors);
+    }
+
+    public Result<Value> evaluate(String input, Environment environment) {
+        Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parsedProgram = parseProgram(input);
+
+        return parsedProgram
+            .fold(
+                syntaxErrors -> new Result.Failure<>(
+                    environment,
+                    new EvalError.SyntaxError(syntaxErrors.stream()
+                        .map(EvalError.SyntaxError::message)
+                        .collect(Collectors.joining(System.lineSeparator())))
+                ),
+                tree -> new AlgebraicEvalVisitor().visit(tree).run(environment)
+            );
+
+
+    }
 }

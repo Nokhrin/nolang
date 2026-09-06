@@ -3,7 +3,7 @@ package com.nokhrin.nolang.common;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.nokhrin.nolang.common.operations.Arithmetic;
+import com.nokhrin.nolang.common.operations.Numeric;
 import com.nokhrin.nolang.common.values.IntValue;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.RealValue;
@@ -13,7 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ArithmeticExamplesTest {
+public class NumericExamplesTest {
 
   static Stream<Arguments> additionCases() {
     return Stream.of(
@@ -29,7 +29,7 @@ public class ArithmeticExamplesTest {
   @MethodSource("additionCases")
   public void add_validOperands_expectedValue(
       NumericValue left, NumericValue right, NumericValue expected) {
-    assertEquals(expected, Arithmetic.add(left, right));
+    assertEquals(expected, Numeric.add(left, right));
   }
 
   static Stream<Arguments> divisionCases() {
@@ -46,7 +46,7 @@ public class ArithmeticExamplesTest {
   @MethodSource("divisionCases")
   public void div_validOperands_expectedValue(
       NumericValue left, NumericValue right, NumericValue expected) {
-    assertEquals(Arithmetic.div(left, right), expected);
+    assertEquals(Numeric.div(left, right), expected);
   }
 
   static Stream<Arguments> negationCases() {
@@ -61,11 +61,11 @@ public class ArithmeticExamplesTest {
   @ParameterizedTest
   @MethodSource("negationCases")
   public void neg_validOperand_expectedValue(NumericValue operand, NumericValue expected) {
-    assertEquals(expected, Arithmetic.neg(operand));
+    assertEquals(expected, Numeric.neg(operand));
   }
 
   @Test
   void div_byZero_throwsArithmeticException() {
-    assertThrows(ArithmeticException.class, () -> Arithmetic.div(new IntValue(1), new IntValue(0)));
+    assertThrows(ArithmeticException.class, () -> Numeric.div(new IntValue(1), new IntValue(0)));
   }
 }

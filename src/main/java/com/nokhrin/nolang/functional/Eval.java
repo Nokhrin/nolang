@@ -1,0 +1,81 @@
+package com.nokhrin.nolang.functional;
+
+import com.nokhrin.nolang.common.executions.ControlSignal;
+import com.nokhrin.nolang.common.executions.Scope;
+import com.nokhrin.nolang.common.values.BoolValue;
+import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.values.VoidValue;
+import com.nokhrin.nolang.functional.Result.Failure;
+import com.nokhrin.nolang.functional.Result.Signal;
+import com.nokhrin.nolang.functional.Result.Success;
+
+import java.util.function.Function;
+
+public interface Eval<A> {
+    static Eval<Value> modifyScope(Function<Scope, Either<ScopeError, Scope>> operation) {
+        return getEnvironment()
+            .flatMap(
+                environment -> {
+                    Either<ScopeError, Scope> result = operation.apply(environment.scope());
+                    return result.fold(
+                        scopeError -> Eval.raiseError(scopeError),
+                        updatedScope -> modifyEnvironment(envModified ->
+                            envModified.withScope(updatedScope))
+                            .flatMap(_ -> Eval.pure(VoidValue.INSTANCE))
+                    );
+                });
+
+    }
+
+    static Eval<Value> whileLoop(Eval<Value> condition, Eval<Value> body) {
+        return condition.flatMap(conditionValue -> {
+            if (conditionValue instanceof BoolValue boolValue) {
+                return boolValue.value()
+                    ? body.flatMap(_ -> whileLoop(condition, body))
+                    : Eval.pure(VoidValue.INSTANCE);
+            }
+            return raiseError(new EvalError.TypeError("While condition must evaluate to boolean"));
+        });
+    }
+
+    Result<A> run(Environment environment);
+
+    static <A> Eval<A> pure(A value) {
+        return environment -> new Success<>(environment, value);
+    }
+
+    static <A> Eval<A> raiseError(EvalError error) {
+        return environment -> new Failure<>(environment, error);
+    }
+
+    static <A> Eval<A> raiseSignal(ControlSignal signal) {
+        return environment -> new Signal<>(environment, signal);
+    }
+
+    default <B> Eval<B> flatMap(Function<A, Eval<B>> function) {
+        return environment -> {
+            Result<A> current = this.run(environment);
+            return switch (current) {
+                case Success<A> success -> function.apply(success.value()).run(success.environment());
+                case Failure<A> failure -> new Failure<>(failure.environment(), failure.error());
+                case Signal<A> signal -> new Signal<>(signal.environment(), signal.signal());
+            };
+        };
+    }
+
+    default <B> Eval<B> map(Function<A, B> function) {
+        return flatMap(value -> Eval.pure(function.apply(value)));
+    }
+
+    static Eval<Environment> getEnvironment() {
+        return environment -> new Success<>(environment, environment);
+    }
+
+    static Eval<Unit> modifyEnvironment(Function<Environment, Environment> function) {
+        return environment -> new Success<>(function.apply(environment), Unit.INSTANCE);
+    }
+
+    static Eval<Value> assignVariable(String name, Eval<Value> valueEval) {
+        return valueEval.flatMap(value -> modifyScope(scope -> scope.assignOrDefine(name, value)));
+    }
+}

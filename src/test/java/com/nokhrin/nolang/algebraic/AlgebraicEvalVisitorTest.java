@@ -3,8 +3,6 @@ package com.nokhrin.nolang.algebraic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.nokhrin.nolang.common.executions.Result;
-import com.nokhrin.nolang.common.executions.ValueResult;
 import com.nokhrin.nolang.common.values.IntValue;
 import com.nokhrin.nolang.common.values.RealValue;
 import java.io.PrintStream;

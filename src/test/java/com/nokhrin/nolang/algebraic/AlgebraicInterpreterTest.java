@@ -2,8 +2,6 @@ package com.nokhrin.nolang.algebraic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.nokhrin.nolang.common.executions.Result;
-import com.nokhrin.nolang.common.executions.ValueResult;
 import com.nokhrin.nolang.common.values.IntValue;
 import java.io.OutputStream;
 import java.io.PrintStream;

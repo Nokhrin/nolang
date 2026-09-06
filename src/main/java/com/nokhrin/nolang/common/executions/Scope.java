@@ -1,78 +1,76 @@
 package com.nokhrin.nolang.common.executions;
 
-import com.nokhrin.nolang.DynamicTypedParser;
-import com.nokhrin.nolang.common.definitions.ParameterSymbol;
 import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.values.VoidValue;
+import com.nokhrin.nolang.functional.Either;
+import com.nokhrin.nolang.functional.ScopeError;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class Scope {
-    private final Scope parent;
-    private final Map<String, Value> bindings;
+public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
 
     /**
-     * Local
+     * Root
+     */
+    public Scope() {
+        this(Map.of(), Optional.empty());
+    }
+
+    /**
+     * Child
      *
      * @param parent
      */
     public Scope(Scope parent) {
-        this.parent = parent;
-        this.bindings = new HashMap<>();
+        this(Map.of(), Optional.of(parent));
     }
 
-    /**
-     * Global
-     */
-    public Scope() {
-        this.parent = null;
-        this.bindings = new HashMap<>();
+    private Scope withBinding(String name, Value value) {
+        Map<String, Value> updatedBindings = new HashMap<>(bindings);
+        updatedBindings.put(name, value);
+        return new Scope(Map.copyOf(updatedBindings), parent);
     }
 
-    public void declare(String name, Value value) {
+    public Either<ScopeError, Scope> define(String name, Value value) {
         if (bindings.containsKey(name)) {
-            throw new IllegalStateException("Variable already declared in current scope");
+            return Either.left(new ScopeError.Duplicated(name));
         }
-        bindings.put(name, value);
+        return Either.right(withBinding(name, value));
     }
 
-    public void assign(String name, Value value) {
+    public Either<ScopeError, Scope> declare(String name) {
+        return define(name, VoidValue.INSTANCE);
+    }
+
+    public Either<ScopeError, Scope> assign(String name, Value value) {
         if (bindings.containsKey(name)) {
-            bindings.put(name, value);
-        } else if (parent != null) {
-            parent.assign(name, value);
-        } else {
-            throw new IllegalStateException("Undefined variable: " + name);
+            return Either.right(withBinding(name, value));
         }
+        return parent
+            .map(
+                p ->
+                    p.assign(name, value)
+                        .map(updatedParent -> new Scope(bindings, Optional.of(updatedParent))))
+            .orElseGet(() -> Either.left(new ScopeError.Undefined(name)));
     }
 
-    public Value fetch(String name) {
+    public Either<ScopeError, Scope> assignOrDefine(String name, Value value) {
+        return assign(name, value).orElseGet(() -> define(name, value));
+    }
+
+    public Optional<Value> lookup(String name) {
         if (bindings.containsKey(name)) {
-            return bindings.get(name);
-        } else if (parent != null) {
-            return parent.fetch(name);
-        } else {
-            throw new IllegalStateException("Undefined variable: " + name);
+            return Optional.of(bindings.get(name));
         }
+        return parent.flatMap(p -> p.lookup(name));
     }
 
-    public Scope getParent() {
-        return parent;
-    }
-
-    public boolean contains(String name) {
+    public boolean isVisible(String name) {
         if (bindings.containsKey(name)) {
             return true;
         }
-        return parent != null && parent.contains(name);
-    }
-
-    public void upsert(String name, Value value) {
-        if (bindings.containsKey(name)) {
-            assign(name, value);
-        } else {
-            declare(name, value);
-        }
+        return parent.map(p -> p.isVisible(name)).orElse(false);
     }
 }
