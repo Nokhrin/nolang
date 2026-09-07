@@ -1,10 +1,6 @@
 package com.nokhrin.nolang.functional;
 
 import com.nokhrin.nolang.common.executions.ControlSignal;
-import com.nokhrin.nolang.common.executions.Scope;
-import com.nokhrin.nolang.common.values.BoolValue;
-import com.nokhrin.nolang.common.values.Value;
-import com.nokhrin.nolang.common.values.VoidValue;
 import com.nokhrin.nolang.functional.Result.Failure;
 import com.nokhrin.nolang.functional.Result.Signal;
 import com.nokhrin.nolang.functional.Result.Success;
@@ -12,31 +8,6 @@ import com.nokhrin.nolang.functional.Result.Success;
 import java.util.function.Function;
 
 public interface Eval<A> {
-    static Eval<Value> modifyScope(Function<Scope, Either<ScopeError, Scope>> operation) {
-        return getEnvironment()
-            .flatMap(
-                environment -> {
-                    Either<ScopeError, Scope> result = operation.apply(environment.scope());
-                    return result.fold(
-                        scopeError -> Eval.raiseError(scopeError),
-                        updatedScope -> modifyEnvironment(envModified ->
-                            envModified.withScope(updatedScope))
-                            .flatMap(_ -> Eval.pure(VoidValue.INSTANCE))
-                    );
-                });
-
-    }
-
-    static Eval<Value> whileLoop(Eval<Value> condition, Eval<Value> body) {
-        return condition.flatMap(conditionValue -> {
-            if (conditionValue instanceof BoolValue boolValue) {
-                return boolValue.value()
-                    ? body.flatMap(_ -> whileLoop(condition, body))
-                    : Eval.pure(VoidValue.INSTANCE);
-            }
-            return raiseError(new EvalError.TypeError("While condition must evaluate to boolean"));
-        });
-    }
 
     Result<A> run(Environment environment);
 
@@ -67,15 +38,4 @@ public interface Eval<A> {
         return flatMap(value -> Eval.pure(function.apply(value)));
     }
 
-    static Eval<Environment> getEnvironment() {
-        return environment -> new Success<>(environment, environment);
-    }
-
-    static Eval<Unit> modifyEnvironment(Function<Environment, Environment> function) {
-        return environment -> new Success<>(function.apply(environment), Unit.INSTANCE);
-    }
-
-    static Eval<Value> assignVariable(String name, Eval<Value> valueEval) {
-        return valueEval.flatMap(value -> modifyScope(scope -> scope.assignOrDefine(name, value)));
-    }
 }

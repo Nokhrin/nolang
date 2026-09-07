@@ -6,6 +6,7 @@ import com.nokhrin.nolang.common.executions.Scope;
 import com.nokhrin.nolang.common.values.BoolValue;
 import com.nokhrin.nolang.common.values.Value;
 import com.nokhrin.nolang.common.values.VoidValue;
+import com.nokhrin.nolang.functional.EnvironmentCombinators;
 import com.nokhrin.nolang.functional.Eval;
 
 public class DynamicTypedEvalVisitor extends DynamicTypedBaseVisitor<Eval<Value>> {
@@ -21,34 +22,34 @@ public class DynamicTypedEvalVisitor extends DynamicTypedBaseVisitor<Eval<Value>
 
     @Override
     public Eval<Value> visitTypedVarDecl(TypedVarDeclContext ctx) {
-        return Eval.assignVariable(ctx.ID().getText(), visit(ctx.expression()));
+        return EnvironmentCombinators.assignVariable(ctx.ID().getText(), visit(ctx.expression()));
     }
 
     @Override
     public Eval<Value> visitUntypedVarDecl(UntypedVarDeclContext ctx) {
-        return Eval.assignVariable(ctx.ID().getText(), visit(ctx.expression()));
+        return EnvironmentCombinators.assignVariable(ctx.ID().getText(), visit(ctx.expression()));
     }
 
     @Override
     public Eval<Value> visitAssignVar(AssignVarContext ctx) {
-        return Eval.assignVariable(ctx.ID().getText(), visit(ctx.assignment()));
+        return EnvironmentCombinators.assignVariable(ctx.ID().getText(), visit(ctx.assignment()));
     }
 
     @Override
     public Eval<Value> visitBlock(BlockContext ctx) {
-        return Eval.getEnvironment()
+        return EnvironmentCombinators.getEnvironment()
             .flatMap(
                 parentEnvironment -> {
                     Scope childScope = new Scope(parentEnvironment.scope());
                     Eval<Value> blockEval =
-                        Eval.modifyEnvironment(env -> env.withScope(childScope))
+                        EnvironmentCombinators.modifyEnvironment(env -> env.withScope(childScope))
                             .flatMap(_ -> Eval.pure(VoidValue.INSTANCE));
                     for (StatementContext statement : ctx.statement()) {
                         blockEval = blockEval.flatMap(_ -> visit(statement));
                     }
                     return blockEval.flatMap(
                         value ->
-                            Eval.modifyEnvironment(env -> env.withScope(parentEnvironment.scope()))
+                            EnvironmentCombinators.modifyEnvironment(env -> env.withScope(parentEnvironment.scope()))
                                 .flatMap(_ -> Eval.pure(value)));
                 });
     }
@@ -80,6 +81,6 @@ public class DynamicTypedEvalVisitor extends DynamicTypedBaseVisitor<Eval<Value>
 
     @Override
     public Eval<Value> visitWhileStatement(WhileStatementContext ctx) {
-        return Eval.whileLoop(visit(ctx.expression()), visit(ctx.statement()));
+        return EnvironmentCombinators.whileLoop(visit(ctx.expression()), visit(ctx.statement()));
     }
 }

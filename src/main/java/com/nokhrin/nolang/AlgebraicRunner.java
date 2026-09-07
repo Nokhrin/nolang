@@ -74,6 +74,8 @@ public class AlgebraicRunner {
         output.println("Algebraic Interpreter\n'/h' for usage info, '/q' to quit");
         output.flush();
 
+        Environment environment = new Environment(new Scope(), new FunctionRegistry(), List.of());
+
         label:
         while (scanner.hasNextLine()) {
             output.print("> ");
@@ -98,8 +100,10 @@ public class AlgebraicRunner {
                 continue;
             }
 
-            Environment environment = new Environment(new Scope(), new FunctionRegistry(), List.of());
             Result<Value> result = interpreter.evaluate(inputLine, environment);
+            if (result instanceof Result.Success<Value> success) {
+                environment = success.environment();
+            }
             result.environment().outputBuffer().forEach(output::println);
         }
     }

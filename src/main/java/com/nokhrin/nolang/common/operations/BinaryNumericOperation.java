@@ -1,7 +1,9 @@
 package com.nokhrin.nolang.common.operations;
 
 import com.nokhrin.nolang.common.values.NumericValue;
+import com.nokhrin.nolang.functional.Either;
 import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.functional.EvalError;
 
 public enum BinaryNumericOperation implements BinaryOperation<NumericValue> {
     ADD("+"),
@@ -16,14 +18,14 @@ public enum BinaryNumericOperation implements BinaryOperation<NumericValue> {
         this.operator = operator;
     }
 
-    public static BinaryNumericOperation fromSymbol(String operator) {
+    public static Either<EvalError, BinaryNumericOperation> fromSymbol(String operator) {
         return switch (operator) {
-            case "+" -> ADD;
-            case "-" -> SUB;
-            case "*" -> MUL;
-            case "/" -> DIV;
-            case "^" -> POW;
-            default -> throw new IllegalArgumentException("Unknown binary operator: " + operator);
+            case "+" -> Either.right(ADD);
+            case "-" -> Either.right(SUB);
+            case "*" -> Either.right(MUL);
+            case "/" -> Either.right(DIV);
+            case "^" -> Either.right(POW);
+            default -> Either.left(new EvalError.SyntaxError("Unknown binary operator: " + operator));
         };
     }
 

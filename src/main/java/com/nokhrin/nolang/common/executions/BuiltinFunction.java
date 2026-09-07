@@ -4,6 +4,7 @@ import com.nokhrin.nolang.common.Type;
 import com.nokhrin.nolang.common.definitions.ParameterSymbol;
 import com.nokhrin.nolang.common.values.*;
 import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.functional.EvalError;
 
 import java.util.List;
 
@@ -17,10 +18,10 @@ public record BuiltinFunction(FunctionSignature signature, Callable implementati
     @Override
     public Eval<Value> invoke(List<Value> args) {
         if (args.size() != signature.parameters().size()) {
-            throw new IllegalArgumentException(
+            return Eval.raiseError(new EvalError.SyntaxError(
                 "Function " + name()
                     + " expected " + signature.parameters().size() + " parameters, "
-                    + " got: " + args.size());
+                    + " got: " + args.size()));
         }
 
         for (int i = 0; i < args.size(); i++) {
@@ -36,11 +37,11 @@ public record BuiltinFunction(FunctionSignature signature, Callable implementati
             };
 
             if (!typeMatched) {
-                throw new IllegalArgumentException(
+                return Eval.raiseError(new EvalError.TypeError(
                     "Function " + name()
                         + " expected type " + expectedType
                         + " for parameter " + parameter.name()
-                        + ", got: " + arg.getClass().getSimpleName());
+                        + ", got: " + arg.getClass().getSimpleName()));
             }
         }
         return implementation.call(args);

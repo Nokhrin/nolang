@@ -3,15 +3,17 @@ package com.nokhrin.nolang.common.executions;
 import com.nokhrin.nolang.common.Type;
 import com.nokhrin.nolang.common.definitions.ParameterSymbol;
 import com.nokhrin.nolang.common.values.*;
+import com.nokhrin.nolang.functional.EnvironmentCombinators;
 import com.nokhrin.nolang.functional.Eval;
 import com.nokhrin.nolang.functional.EvalError;
+import com.nokhrin.nolang.functional.ScopeError;
 
 import java.util.*;
 
 public record FunctionRegistry(Map<String, Function> functions) {
 
     public FunctionRegistry() {
-        this(createBuiltins());
+        this(Map.copyOf(createBuiltins()));
     }
 
     private static Map<String, Function> createBuiltins() {
@@ -20,7 +22,7 @@ public record FunctionRegistry(Map<String, Function> functions) {
             "print",
             new BuiltinFunction(
                 new FunctionSignature("print", List.of(), new Type.VoidType()),
-                args -> Eval.modifyEnvironment(environment -> {
+                args -> EnvironmentCombinators.modifyEnvironment(environment -> {
                     List<String> outputBuffer = new ArrayList<>(environment.outputBuffer());
                     for (Value value : args) {
                         outputBuffer.add(value.toString());
@@ -106,10 +108,9 @@ public record FunctionRegistry(Map<String, Function> functions) {
     }
 
     public Eval<Value> invoke(String funcName, List<Value> args) {
-        Function function =
-            this.fetch(funcName)
-                .orElseThrow(() -> new IllegalStateException("Undefined function: " + funcName));
-        return function.invoke(args);
+        return this.fetch(funcName)
+            .map(function -> function.invoke(args))
+            .orElseGet(() -> Eval.raiseError(new ScopeError.Undefined("Undefined function: " + funcName)));
     }
 
     public FunctionRegistry define(FunctionSignature signature, FunctionBody body, Scope scope) {

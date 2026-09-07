@@ -76,11 +76,15 @@ public class Folds {
                 .map(evalFunction)
                 .toList();
 
-        List<BinaryNumericOperation> operations =
-            operatorCtx.stream()
-                .map(ParseTree::getText)
-                .map(BinaryNumericOperation::fromSymbol)
-                .toList();
+        List<BinaryNumericOperation> operations = new ArrayList<>();
+        for (ParseTree operation:operatorCtx) {
+            Either<EvalError,BinaryNumericOperation> parsedOperator=
+                BinaryNumericOperation.fromSymbol(operation.getText());
+            if (parsedOperator.isLeft()){
+                return Eval.raiseError(parsedOperator.leftOptional().orElseThrow());
+            }
+            operations.add(parsedOperator.rightOptional().orElseThrow());
+        }
 
         return Folds.foldLeft(operands, operations);
 

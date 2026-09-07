@@ -6,10 +6,7 @@ import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
 import com.nokhrin.nolang.common.values.Value;
 import com.nokhrin.nolang.common.values.VoidValue;
-import com.nokhrin.nolang.functional.Eval;
-import com.nokhrin.nolang.functional.Folds;
-import com.nokhrin.nolang.functional.OperationEvaluator;
-import com.nokhrin.nolang.functional.ScopeError;
+import com.nokhrin.nolang.functional.*;
 
 import java.util.List;
 
@@ -40,7 +37,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     public Eval<Value> visitAssignStatement(AlgebraicParser.AssignStatementContext ctx) {
         String varName = ctx.ID().getText();
         return visit(ctx.term())
-            .flatMap(varValue -> Eval.modifyScope(scope -> scope.assignOrDefine(varName, varValue)));
+            .flatMap(varValue -> EnvironmentCombinators.modifyScope(scope -> scope.assignOrDefine(varName, varValue)));
     }
 
     @Override
@@ -110,7 +107,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     @Override
     public Eval<Value> visitNumberAtom(AlgebraicParser.NumberAtomContext ctx) {
         String lexeme = ctx.NUM().getText();
-        return Eval.pure(parseNumber(lexeme));
+        return parseNumber(lexeme).map(v -> v);
     }
 
     @Override
@@ -120,7 +117,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
             .map(this::visit)
             .toList();
         return Folds.collectArguments(argsEval)
-            .flatMap(args -> Eval.getEnvironment()
+            .flatMap(args -> EnvironmentCombinators.getEnvironment()
                 .flatMap(env -> env.registry().invoke(funcName, args)));
     }
 
@@ -128,7 +125,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     public Eval<Value> visitVariableAtom(AlgebraicParser.VariableAtomContext ctx) {
         String varName = ctx.ID().getText();
 
-        return Eval.getEnvironment()
+        return EnvironmentCombinators.getEnvironment()
             .flatMap(
                 env ->
                     env.scope()
