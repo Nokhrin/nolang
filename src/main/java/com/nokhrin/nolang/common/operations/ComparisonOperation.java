@@ -1,10 +1,12 @@
 package com.nokhrin.nolang.common.operations;
 
-import com.nokhrin.nolang.common.values.BoolValue;
 import com.nokhrin.nolang.common.values.NumericValue;
-import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.core.Either;
+import com.nokhrin.nolang.common.core.Eval;
+import com.nokhrin.nolang.common.core.EvalError;
 
-public enum ComparisonOperation {
+public enum ComparisonOperation implements Relation<NumericValue, NumericValue> {
     GT(">"),
     LT("<"),
     EQ("=="),
@@ -14,23 +16,29 @@ public enum ComparisonOperation {
 
     private final String operator;
 
-    ComparisonOperation(String s) {
-        throw new UnsupportedOperationException("Utility class");
+    ComparisonOperation(String operator) {
+        this.operator = operator;
     }
 
-    public static ComparisonOperation fromSymbol(String symbol) {
+    public static Either<EvalError, ComparisonOperation> fromSymbol(String symbol) {
         return switch (symbol) {
-            case ">" -> GT;
-            case "<" -> LT;
-            case "==" -> EQ;
-            case "!=" -> NEQ;
-            case ">=" -> GEQ;
-            case "<=" -> LEQ;
-            default -> throw new IllegalArgumentException("Unknown comparison operator");
+            case ">" -> Either.right(GT);
+            case "<" -> Either.right(LT);
+            case "==" -> Either.right(EQ);
+            case "!=" -> Either.right(NEQ);
+            case ">=" -> Either.right(GEQ);
+            case "<=" -> Either.right(LEQ);
+            default -> Either.left(new EvalError.SyntaxError("Unknown comparison operator"));
         };
     }
 
-    public Eval<BoolValue> apply(NumericValue left, NumericValue right) {
+    @Override
+    public String operator() {
+        return operator;
+    }
+
+    @Override
+    public Eval<Value.Bool> apply(NumericValue left, NumericValue right) {
         return Logical.compare(left, this, right);
     }
 }

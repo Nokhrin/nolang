@@ -1,11 +1,11 @@
 package com.nokhrin.nolang;
 
 import com.nokhrin.nolang.algebraic.AlgebraicInterpreter;
-import com.nokhrin.nolang.common.executions.FunctionRegistry;
-import com.nokhrin.nolang.common.executions.Scope;
+import com.nokhrin.nolang.common.core.FunctionRegistry;
+import com.nokhrin.nolang.common.core.Scope;
 import com.nokhrin.nolang.common.values.Value;
-import com.nokhrin.nolang.functional.Environment;
-import com.nokhrin.nolang.functional.Result;
+import com.nokhrin.nolang.common.core.Environment;
+import com.nokhrin.nolang.common.core.Result;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +31,7 @@ public class AlgebraicRunner {
             return;
         }
 
-        runInteractive(interpreter, functionRegistry, input, output);
+        runInteractive(interpreter, functionRegistry, input, output, error);
     }
 
     private static void executeFile(
@@ -56,6 +56,15 @@ public class AlgebraicRunner {
             Result<Value> result = interpreter.evaluate(fileContent, environment);
             result.environment().outputBuffer().forEach(output::println);
 
+            switch (result) {
+                case Result.Success<Value> success -> environment = success.environment().withOutput(List.of());
+                case Result.Failure<Value> failure -> {
+                    environment = failure.environment().withOutput(List.of());
+                    error.println(failure.error().message());
+                    error.flush();
+                }
+                case Result.Control<Value> control -> environment = control.environment().withOutput(List.of());
+            }
 
         } catch (IOException e) {
             error.println("IO error: " + e);
@@ -68,13 +77,14 @@ public class AlgebraicRunner {
         AlgebraicInterpreter interpreter,
         FunctionRegistry functionRegistry,
         InputStream input,
-        PrintStream output
+        PrintStream output,
+        PrintStream error
     ) {
         Scanner scanner = new Scanner(input);
         output.println("Algebraic Interpreter\n'/h' for usage info, '/q' to quit");
         output.flush();
 
-        Environment environment = new Environment(new Scope(), new FunctionRegistry(), List.of());
+        Environment environment = new Environment(new Scope(), functionRegistry, List.of());
 
         label:
         while (scanner.hasNextLine()) {
@@ -100,11 +110,19 @@ public class AlgebraicRunner {
                 continue;
             }
 
-            Result<Value> result = interpreter.evaluate(inputLine, environment);
-            if (result instanceof Result.Success<Value> success) {
-                environment = success.environment();
-            }
+            Environment envForOutput = environment.withOutput(List.of());
+            Result<Value> result = interpreter.evaluate(inputLine, envForOutput);
             result.environment().outputBuffer().forEach(output::println);
+
+            switch (result) {
+                case Result.Success<Value> success -> environment = success.environment().withOutput(List.of());
+                case Result.Failure<Value> failure -> {
+                    environment = envForOutput.withOutput(List.of());
+                    error.println(failure.error().message());
+                    error.flush();
+                }
+                case Result.Control<Value> control -> environment = envForOutput.withOutput(List.of());
+            }
         }
     }
 }

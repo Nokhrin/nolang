@@ -4,6 +4,6 @@ import com.nokhrin.nolang.common.Type;
 
 import java.util.List;
 
-public record FunctionSymbol(String name, List<ParameterSymbol> formalParameters, Type returnType)
+public record FunctionSymbol(String name, List<FunctionParameter> formalParameters, Type returnType)
     implements Symbol {
 }

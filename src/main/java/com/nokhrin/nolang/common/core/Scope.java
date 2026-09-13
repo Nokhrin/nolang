@@ -1,9 +1,6 @@
-package com.nokhrin.nolang.common.executions;
+package com.nokhrin.nolang.common.core;
 
 import com.nokhrin.nolang.common.values.Value;
-import com.nokhrin.nolang.common.values.VoidValue;
-import com.nokhrin.nolang.functional.Either;
-import com.nokhrin.nolang.functional.ScopeError;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +32,13 @@ public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
 
     public Either<ScopeError, Scope> define(String name, Value value) {
         if (bindings.containsKey(name)) {
-            return Either.left(new ScopeError.Duplicated(name));
+            return Either.left(new ScopeError.DuplicatedVariable(name));
         }
         return Either.right(withBinding(name, value));
     }
 
     public Either<ScopeError, Scope> declare(String name) {
-        return define(name, VoidValue.INSTANCE);
+        return define(name, Value.Void.INSTANCE);
     }
 
     public Either<ScopeError, Scope> assign(String name, Value value) {
@@ -53,18 +50,21 @@ public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
                 p ->
                     p.assign(name, value)
                         .map(updatedParent -> new Scope(bindings, Optional.of(updatedParent))))
-            .orElseGet(() -> Either.left(new ScopeError.Undefined(name)));
+            .orElseGet(() -> Either.left(new ScopeError.UndefinedVariable(name)));
     }
 
     public Either<ScopeError, Scope> assignOrDefine(String name, Value value) {
         return assign(name, value).orElseGet(() -> define(name, value));
     }
 
-    public Optional<Value> lookup(String name) {
-        if (bindings.containsKey(name)) {
-            return Optional.of(bindings.get(name));
+    public Either<ScopeError, Value> lookup(String name) {
+        Value value = bindings.get(name);
+        if (value != null) {
+            return Either.right(value);
         }
-        return parent.flatMap(p -> p.lookup(name));
+        return parent.isPresent()
+            ? parent.get().lookup(name)
+            : Either.left(new ScopeError.UndefinedVariable(name));
     }
 
     public boolean isVisible(String name) {

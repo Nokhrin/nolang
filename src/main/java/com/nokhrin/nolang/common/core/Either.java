@@ -1,4 +1,4 @@
-package com.nokhrin.nolang.functional;
+package com.nokhrin.nolang.common.core;
 
 import java.util.Objects;
 import java.util.Optional;

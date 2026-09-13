@@ -1,7 +1,9 @@
 package com.nokhrin.nolang.common.operations;
 
 import com.nokhrin.nolang.common.values.NumericValue;
-import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.common.core.Either;
+import com.nokhrin.nolang.common.core.Eval;
+import com.nokhrin.nolang.common.core.EvalError;
 
 public enum UnaryNumericOperation implements UnaryOperation<NumericValue> {
     PLUS("+"),
@@ -32,14 +34,14 @@ public enum UnaryNumericOperation implements UnaryOperation<NumericValue> {
         };
     }
 
-    public static UnaryNumericOperation fromSymbol(String operator) {
+    public static Either<EvalError, UnaryNumericOperation> fromSymbol(String operator) {
         return switch (operator) {
-            case "+" -> PLUS;
-            case "-" -> MINUS;
-            case "abs" -> ABSOLUTE;
-            case "!" -> FACTORIAL;
-            case "%" -> PERCENT;
-            default -> throw new IllegalArgumentException("Unknown unary operator: " + operator);
+            case "+" -> Either.right(PLUS);
+            case "-" -> Either.right(MINUS);
+            case "abs" -> Either.right(ABSOLUTE);
+            case "!" -> Either.right(FACTORIAL);
+            case "%" -> Either.right(PERCENT);
+            default -> Either.left(new EvalError.SyntaxError("Unknown unary operator: " + operator));
         };
     }
 }

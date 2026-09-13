@@ -1,9 +1,9 @@
 package com.nokhrin.nolang.common.operations;
 
-import com.nokhrin.nolang.common.values.BoolValue;
-import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.core.Eval;
 
-public enum BinaryLogicalOperation implements BinaryOperation<BoolValue> {
+public enum BinaryLogicalOperation implements BinaryOperation<Value.Bool> {
     AND("AND"),
     OR("OR");
 
@@ -20,7 +20,7 @@ public enum BinaryLogicalOperation implements BinaryOperation<BoolValue> {
 
 
     @Override
-    public Eval<BoolValue> apply(BoolValue left, BoolValue right) {
+    public Eval<Value.Bool> apply(Value.Bool left, Value.Bool right) {
         return switch (this) {
             case AND -> Logical.and(left, right);
             case OR -> Logical.or(left, right);

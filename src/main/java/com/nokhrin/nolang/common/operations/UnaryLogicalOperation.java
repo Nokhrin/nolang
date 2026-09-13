@@ -1,26 +1,27 @@
 package com.nokhrin.nolang.common.operations;
 
-import com.nokhrin.nolang.common.values.BoolValue;
-import com.nokhrin.nolang.functional.Eval;
+import com.nokhrin.nolang.common.values.Value;
+import com.nokhrin.nolang.common.core.Eval;
 
-public enum UnaryLogicalOperation implements UnaryOperation<BoolValue> {
-  NOT("NOT");
+public enum UnaryLogicalOperation implements UnaryOperation<Value.Bool> {
+    NOT("NOT");
 
-  private final String operator;
-  UnaryLogicalOperation(String operator) {
-      this.operator=operator;
-  }
+    private final String operator;
 
-  @Override
-  public String operator() {
-    return operator;
-  }
+    UnaryLogicalOperation(String operator) {
+        this.operator = operator;
+    }
 
-  @Override
-  public Eval<BoolValue> apply(BoolValue operand) {
-    return switch (this){
-        case NOT -> Logical.not(operand);
-    };
+    @Override
+    public String operator() {
+        return operator;
+    }
 
-  }
+    @Override
+    public Eval<Value.Bool> apply(Value.Bool operand) {
+        return switch (this) {
+            case NOT -> Logical.not(operand);
+        };
+
+    }
 }

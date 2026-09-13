@@ -45,6 +45,12 @@
 - Использование переменной до первого присваивания является ошибкой
 - Повторное присваивание разрешено
 
+### Типизация
+Динамическая
+
+### Способ выполнения
+Интерпретируемый
+
 ## Обоснование решения
 
 ### Почему выбран функциональный подход
@@ -106,6 +112,96 @@
 языке. Тестирование сокращается до проверки базисных случаев и индуктивных шагов для каждого типа
 узла.
 
+### Типизация вычислений
+Операции разделены на классы по признакам количество операндов, тип операндов
+проблема
+вызов конкретного метода в контексте, для каждого вычисления - уникальная инструкция, многословно, надо знать реализацию вычисления
+решение - интерфейс для вычислений  
+
+### Типизация результатов вычислений
+проблема - переход к конкретным типам Value
+обобщенные типы java инвариантны
+NumericValue является Value
+но
+Eval<NumericValue> не является Eval<Value>
+Result<NumericValue> не является Result<Value>
+
+решение - сужение/расширение типов
+
+Value.match - сужение по Optional
+В посетителе для вычисления Numeric определить приватные методы
+Вычисление операторов - в публичных методах с типом из BaseVisitor<T> - Eval<Value>
+
+
+```plantuml
+package "nolang.functional" {
+    interface "Eval<A>" {
+        +run(environment: Environment): Result<A>
+        {static} +pure(value: A): Eval<A>
+        {static} +raiseError(error: EvalError): Eval<A>
+        {static} +raiseSignal(signal: ControlSignal): Eval<A>
+        +flatMap(function: Function<A, Eval<B>>): Eval<B>
+        +map(function: Function<A, B>): Eval<B>
+        +widen(): Eval<B>
+    }
+
+
+    interface "Result<A>" <<sealed>> {
+        +environment(): Environment
+    }
+
+    record "Result.Success<A>" {
+        +environment: Environment
+        +value: A
+    }
+
+    record "Result.Failure<A>" {
+        +environment: Environment
+        +error: EvalError
+    }
+
+    record "Result.Control<A>" {
+        +environment: Environment
+        +signal: ControlSignal
+    }
+
+    class Environment
+    class EvalError
+}
+
+"Eval<A>" ..> "Result<A>" : run() returns
+
+package "nolang.common.values" {
+    interface Value {
+        +match(
+            onNumeric: "Function<NumericValue, T>",
+            onBool: "Function<BoolValue, T>",
+            onVoid: "Function<VoidValue, T>"
+        ): T
+    }
+
+    interface NumericValue {
+    }
+    Value <|.. NumericValue
+
+    record IntValue {
+        +number: long
+    }
+    NumericValue <|.. IntValue
+    note "NumericValue\n подтип\nValue" as InheritanceNote
+    InheritanceNote .. NumericValue
+    InheritanceNote .. Value
+
+    note "Eval<NumericValue>\nне подтип\nEval<Value>" as InvariantNote
+
+    InvariantNote .. "Eval<NumericValue>"
+    InvariantNote .. "Eval<Value>"
+}
+```
+
+
+
+
 ## Выполнение
 
 1. Клонирование репозитория
@@ -139,35 +235,38 @@
 mvn clean package
 ```
 
-### Интерактивный режим (REPL)
+### Запуск: Интерактивный режим (REPL)
 
 ```shell
 java -jar target/nolang-1.0-SNAPSHOT.jar algebraic
 ```
 
-Пример сессии:
+```text
+Ввод:
+print(abs(-3))
+
+stdout:
+3
+
+stderr:
+пусто
+
+Статус:
+успех
+```
 
 ```text
-Algebraic Interpreter
-'/h' for usage info, '/q' to quit
-> /h
-Built-in functions:
-print
-sin
-abs
-pow
+Ввод:
+print(1/0)
 
-Use /h <function name> for details. Example: /h sin
-> print(abs(-5))
-5
-> print(sin(0))
-0.0
-> x = 2^3
-> print(x)
-8
-> print(2!^3)
-8
-> /q
+stdout:
+пусто
+
+stderr:
+Division by zero
+
+Статус:
+ошибка выполнения, EvalError.ArithmeticError
 ```
 
 Примечание: оператор присваивания и выражения без `print(...)` не производят вывода. Вывод
@@ -229,6 +328,13 @@ CLI сообщение об ошибке не выводится в `outputBuffe
 - Встроенные функции: Предоставление набора стандартных математических функций (например, `sin`,
   `abs`, `pow`).
 
+### Типизация
+Динамическая
+
+### Способ выполнения
+Интерпретируемый
+
+
 ---
 
 # Этап 3: Транслятор: статическая типизация
@@ -241,6 +347,13 @@ CLI сообщение об ошибке не выводится в `outputBuffe
   выполнения) при попытке
   присвоить значение несовместимого типа или передать аргумент неверного типа в функцию.
 - Область видимости: Поддержка вложенных областей видимости переменных.
+
+### Типизация
+Статическая
+
+### Способ выполнения
+Компилируемый
+
 
 ---
 

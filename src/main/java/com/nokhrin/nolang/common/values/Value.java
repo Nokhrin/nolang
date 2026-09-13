@@ -1,36 +1,37 @@
 package com.nokhrin.nolang.common.values;
 
-import java.util.Optional;
 import java.util.function.Function;
 
-public sealed interface Value permits NumericValue, BoolValue, VoidValue {
+public sealed interface Value permits NumericValue, Value.Bool, Value.Void {
     <T> T match(
         Function<NumericValue, T> onNumeric,
-        Function<BoolValue, T> onBool,
-        Function<VoidValue, T> onVoid
+        Function<Bool, T> onBool,
+        Function<Void, T> onVoid
     );
 
-    default Optional<NumericValue> asNumeric() {
-        return match(
-            Optional::of,
-            _ -> Optional.empty(),
-            _ -> Optional.empty()
-        );
+    record Void() implements Value {
+        public static final Void INSTANCE = new Void();
+
+        @Override
+        public String toString() {
+            return "void";
+        }
+
+        @Override
+        public <T> T match(Function<NumericValue, T> onNumeric, Function<Bool, T> onBool, Function<Void, T> onVoid) {
+            return onVoid.apply(this);
+        }
     }
 
-    default Optional<BoolValue> asBool() {
-        return match(
-            _ -> Optional.empty(),
-            Optional::of,
-            _ -> Optional.empty()
-        );
-    }
+    record Bool(boolean value) implements Value {
+        @Override
+        public <T> T match(Function<NumericValue, T> onNumeric, Function<Bool, T> onBool, Function<Void, T> onVoid) {
+            return onBool.apply(this);
+        }
 
-    default Optional<VoidValue> asVoid() {
-        return match(
-            _ -> Optional.empty(),
-            _ -> Optional.empty(),
-            Optional::of
-        );
+        @Override
+        public String toString() {
+            return Boolean.toString(value);
+        }
     }
 }

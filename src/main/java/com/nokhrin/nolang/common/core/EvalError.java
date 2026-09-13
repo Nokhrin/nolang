@@ -1,6 +1,6 @@
-package com.nokhrin.nolang.functional;
+package com.nokhrin.nolang.common.core;
 
-public sealed interface EvalError permits EvalError.ArithmeticError, EvalError.ArityError, EvalError.SyntaxError, EvalError.TypeError, ScopeError {
+public sealed interface EvalError permits EvalError.ArithmeticError, EvalError.ArityError, EvalError.SyntaxError, EvalError.TypeError, ScopeError.UndefinedFunction, ScopeError {
     String message();
 
 
@@ -15,4 +15,5 @@ public sealed interface EvalError permits EvalError.ArithmeticError, EvalError.A
 
     record ArityError(String message) implements EvalError {
     }
+
 }

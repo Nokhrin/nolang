@@ -3,10 +3,10 @@ package com.nokhrin.nolang.algebraic;
 import com.nokhrin.nolang.AlgebraicLexer;
 import com.nokhrin.nolang.AlgebraicParser;
 import com.nokhrin.nolang.common.values.Value;
-import com.nokhrin.nolang.functional.Either;
-import com.nokhrin.nolang.functional.Environment;
-import com.nokhrin.nolang.functional.EvalError;
-import com.nokhrin.nolang.functional.Result;
+import com.nokhrin.nolang.common.core.Either;
+import com.nokhrin.nolang.common.core.Environment;
+import com.nokhrin.nolang.common.core.EvalError;
+import com.nokhrin.nolang.common.core.Result;
 import org.antlr.v4.runtime.*;
 
 import java.util.ArrayList;

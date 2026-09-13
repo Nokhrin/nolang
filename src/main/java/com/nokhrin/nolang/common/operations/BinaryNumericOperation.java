@@ -1,9 +1,9 @@
 package com.nokhrin.nolang.common.operations;
 
 import com.nokhrin.nolang.common.values.NumericValue;
-import com.nokhrin.nolang.functional.Either;
-import com.nokhrin.nolang.functional.Eval;
-import com.nokhrin.nolang.functional.EvalError;
+import com.nokhrin.nolang.common.core.Either;
+import com.nokhrin.nolang.common.core.Eval;
+import com.nokhrin.nolang.common.core.EvalError;
 
 public enum BinaryNumericOperation implements BinaryOperation<NumericValue> {
     ADD("+"),
