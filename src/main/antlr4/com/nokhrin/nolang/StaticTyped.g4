@@ -53,7 +53,7 @@ unary : 'NOT' unary      #not
 
 atom : FLOAT                #float
      | INT                 #int
-     | BOOL                 #bool
+     | BOOL                 #boolValue
      | call             #funcCall
      | ID                 #id
      | '(' expr ')'       #paren
@@ -61,7 +61,7 @@ atom : FLOAT                #float
 
 INT_TYPE : 'int' ;
 FLOAT_TYPE : 'float' ;
-BOOL_TYPE : 'bool' ;
+BOOL_TYPE : 'boolValue' ;
 VOID_TYPE : 'void' ;
 BOOL : 'true' | 'false' ;
 ID    : ALPHA ('_' | ALPHA | DIGIT)* ;

@@ -1,18 +1,39 @@
 package com.nokhrin.nolang.common;
 
-public sealed interface Type permits Type.Bool, Type.Int, Type.Numeric, Type.Real, Type.Void {
-    record Numeric() implements Type {
-    }
+import com.nokhrin.nolang.common.values.NumericValue;
+import com.nokhrin.nolang.common.values.Value;
 
-    record Int() implements Type {
-    }
+public sealed interface Type
+    permits Type.BoolType, Type.IntType, Type.NumericType, Type.RealType, Type.VoidType {
+  boolean accepts(Value value);
 
-    record Real() implements Type {
+  record NumericType() implements Type {
+    public boolean accepts(Value v) {
+      return v instanceof NumericValue;
     }
+  }
 
-    record Bool() implements Type {
+  record IntType() implements Type {
+    public boolean accepts(Value v) {
+      return v instanceof NumericValue.IntValue;
     }
+  }
 
-    record Void() implements Type {
+  record RealType() implements Type {
+    public boolean accepts(Value v) {
+      return v instanceof NumericValue.RealValue;
     }
+  }
+
+  record BoolType() implements Type {
+    public boolean accepts(Value v) {
+      return v instanceof Value.BoolValue;
+    }
+  }
+
+  record VoidType() implements Type {
+    public boolean accepts(Value v) {
+      return v instanceof Value.VoidValue;
+    }
+  }
 }

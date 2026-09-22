@@ -1,4 +1,4 @@
-package com.nokhrin.nolang.common.functional;
+package com.nokhrin.nolang.common.combinators;
 
 import com.nokhrin.nolang.common.core.Either;
 import com.nokhrin.nolang.common.core.Eval;
@@ -21,12 +21,10 @@ public class ScopeCombinators {
                     Either<ScopeError, Scope> result = operation.apply(environment.scope());
                     return result.fold(
                         scopeError -> Eval.raiseError(scopeError),
-                        updatedScope -> EnvironmentCombinators.modifyEnvironment(envModified ->
-                                envModified.withScope(updatedScope))
-                            .flatMap(_ -> Eval.pure(Value.Void.INSTANCE))
-                    );
+                        updatedScope ->
+                            EnvironmentCombinators.modifyEnvironment(
+                                    envModified -> envModified.withScope(updatedScope))
+                                .flatMap(_ -> Eval.pure(Value.VoidValue.INSTANCE)));
                 });
-
     }
-
 }

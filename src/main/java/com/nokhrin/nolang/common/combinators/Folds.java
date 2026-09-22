@@ -1,4 +1,4 @@
-package com.nokhrin.nolang.common.functional;
+package com.nokhrin.nolang.common.combinators;
 
 import com.nokhrin.nolang.common.core.Either;
 import com.nokhrin.nolang.common.core.Eval;
@@ -6,13 +6,14 @@ import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
-import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public class Folds {
     private Folds() {
@@ -54,13 +55,13 @@ public class Folds {
      * @return
      */
     public static Eval<NumericValue> foldLeftNumeric(
-        List<Eval<NumericValue>> operands,
-        List<BinaryNumericOperation> operations) {
+        List<Eval<NumericValue>> operands, List<BinaryNumericOperation> operations) {
         if (operands.isEmpty()) {
             return Eval.raiseError(new EvalError.SyntaxError("Binary expression without operands"));
         }
         if (operands.size() != operations.size() + 1) {
-            return Eval.raiseError(new EvalError.SyntaxError("Count of operands and operations is invalid"));
+            return Eval.raiseError(
+                new EvalError.SyntaxError("Count of operands and operations is invalid"));
         }
         if (operations.isEmpty()) {
             return Eval.raiseError(new EvalError.SyntaxError("Binary expression without operations"));
@@ -78,11 +79,8 @@ public class Folds {
     public static Eval<NumericValue> foldLeftAssociativeNumeric(
         List<? extends ParserRuleContext> operandCtx,
         List<? extends ParserRuleContext> operationCtx,
-        Function<? super ParserRuleContext, Eval<NumericValue>> evalFunction
-    ) {
-        List<Eval<NumericValue>> operands = operandCtx.stream()
-            .map(evalFunction)
-            .toList();
+        Function<? super ParserRuleContext, Eval<NumericValue>> evalFunction) {
+        List<Eval<NumericValue>> operands = operandCtx.stream().map(evalFunction).toList();
         List<BinaryNumericOperation> operations = new ArrayList<>();
 
         for (ParserRuleContext operation : operationCtx) {
@@ -105,54 +103,40 @@ public class Folds {
      * @return
      */
     public static Eval<Value> foldLeftDynamic(
-        List<Eval<Value>> operands,
-        List<String> operatorSymbols) {
+        List<Eval<Value>> operands, List<String> operatorSymbols) {
         if (operands.isEmpty()) {
-            Eval.raiseError(new EvalError.SyntaxError("Binary expression is empty"));
+            return Eval.raiseError(new EvalError.SyntaxError("Binary expression is empty"));
         }
 
-        Eval<Value> accumulator = operands.getFirst();
+        Eval<NumericValue> accumulator = operands.getFirst().flatMap(NumericValues::narrow);
 
         for (int i = 0; i < operatorSymbols.size(); i++) {
-            String operationSymbol = operatorSymbols.get(i);
-            Eval<Value> rightEval = operands.get(i + 1);
-
-            accumulator = accumulator.flatMap(left ->
-                rightEval.flatMap(right -> {
-                    Either<EvalError, BinaryNumericOperation> parsed =
-                        BinaryNumericOperation.fromSymbol(operationSymbol);
-                    if (parsed.isLeft()) {
-                        return Eval.raiseError(parsed.leftOptional().orElseThrow());
-                    }
-                    BinaryNumericOperation operation = parsed.rightOptional().orElseThrow();
-
-                    return left.match(
-                        lNum -> right.match(
-                            rNum -> operation.apply(lNum, rNum).widen(),
-                            rBool -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got boolean: " + rBool)),
-                            rVoid -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got void: " + rVoid))
-                        ),
-                        lBool -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got boolean: " + lBool)),
-                        lVoid -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got void: " + lVoid))
-                    );
-                })
-            );
+            Either<EvalError, BinaryNumericOperation> operationParsed =
+                BinaryNumericOperation.fromSymbol(operatorSymbols.get(i));
+            if (operationParsed.isLeft()) {
+                return Eval.raiseError(operationParsed.leftOptional().orElseThrow());
+            }
+            BinaryNumericOperation operation = operationParsed.rightOptional().orElseThrow();
+            Eval<NumericValue> right = operands.get(i + 1).flatMap(NumericValues::narrow);
+            accumulator = operation.apply(accumulator, right);
         }
-        return accumulator;
+        return accumulator.widen();
     }
 
-    public static Eval<List<Value>> collectArguments(List<Eval<Value>> argsEval) {
+    public static Eval<List<Value>> collectArguments(List<? extends Eval<? extends Value>> argsEval) {
         Eval<List<Value>> accumulator = Eval.pure(List.of());
-        for (Eval<Value> arg : argsEval) {
-            accumulator = accumulator.flatMap(argsInitial ->
-                arg.map(value -> {
-                    List<Value> updatedArgs = new ArrayList<>(argsInitial.size() + 1);
-                    updatedArgs.addAll(argsInitial);
-                    updatedArgs.add(value);
-                    return List.copyOf(updatedArgs);
-                }));
+        for (Eval<? extends Value> arg : argsEval) {
+            accumulator =
+                accumulator.flatMap(
+                    argsInitial ->
+                        arg.map(
+                            value -> {
+                                List<Value> updatedArgs = new ArrayList<>(argsInitial.size() + 1);
+                                updatedArgs.addAll(argsInitial);
+                                updatedArgs.add(value);
+                                return List.copyOf(updatedArgs);
+                            }));
         }
         return accumulator;
     }
-
 }

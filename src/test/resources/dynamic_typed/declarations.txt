@@ -2,7 +2,7 @@
 int x = -5
 float y = -x^2
 float z = 5.
-bool flag = x > 0
+boolValue flag = x > 0
 
 // Untyped variable declarations
 a = -x^2

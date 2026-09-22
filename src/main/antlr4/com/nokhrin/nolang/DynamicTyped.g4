@@ -90,7 +90,7 @@ atom        : '|' assignment '|'    #absoluteAtom
 
 INT_TYPE : 'int' ;
 REAL_TYPE : 'float' ;
-BOOL_TYPE : 'bool' ;
+BOOL_TYPE : 'boolValue' ;
 VOID_TYPE : 'void' ;
 BOOL : 'true' | 'false' ;
 VOID : 'void_value' ;
