@@ -6,14 +6,13 @@ import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import org.antlr.v4.runtime.ParserRuleContext;
 
 public class Folds {
     private Folds() {
@@ -63,9 +62,7 @@ public class Folds {
             return Eval.raiseError(
                 new EvalError.SyntaxError("Count of operands and operations is invalid"));
         }
-        if (operations.isEmpty()) {
-            return Eval.raiseError(new EvalError.SyntaxError("Binary expression without operations"));
-        }
+
         Eval<NumericValue> accumulator = operands.getFirst();
 
         for (int i = 0; i < operations.size(); i++) {
@@ -120,7 +117,7 @@ public class Folds {
             Eval<NumericValue> right = operands.get(i + 1).flatMap(NumericValues::narrow);
             accumulator = operation.apply(accumulator, right);
         }
-        return accumulator.widen();
+        return EvalCombinators.upcastToValue(accumulator);
     }
 
     public static Eval<List<Value>> collectArguments(List<? extends Eval<? extends Value>> argsEval) {

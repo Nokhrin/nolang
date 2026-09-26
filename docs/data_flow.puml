@@ -1,0 +1,91 @@
+@startuml
+title Nolang - activity diagram
+legend top
+M = translator Mode (alg, dyn, stat)
+end legend
+
+start
+:Input;
+
+:Main;
+note right
+select runner
+end note
+
+:M Runner;
+note right
+init Translator, Environment, Function Registry;
+end note
+
+:M Translator;
+note right
+compile
+end note
+
+:M Syntax Analyzer (ANTLR);
+note right
+parse input_text, generate AST;
+end note
+
+if (parse success?) then (evaluate)
+
+        :M Eval Visitor;
+        note right
+        Semantic analysis: traverse AST, construct deferred calculations (Eval<Value>);
+        end note
+
+        :M Runner;
+        note right
+        Eval.run - execute deferred calculations, construct Result<Value>;
+        end note
+
+    else (throw error)
+    :SyntaxError;
+end if
+
+
+:M Runner;
+
+if (Value?) then (yes)
+    :Runner outputs Value;
+    stop
+
+else if (Error?) then (yes)
+    :Runner outputs error;
+    stop
+
+else if (Control signal?) then (yes)
+    if (Continue?) then (yes)
+        :runtime error: continue outside loop;
+        stop
+    else if (Break?) then (yes)
+        :runtime error: break outside loop;
+        stop
+    else if (Return?) then (yes)
+        :runtime error: return outside function;
+        stop
+    end if
+end if
+
+note right
+print output;
+end note
+
+
+
+stop
+
+start
+:A = Eval<T>;
+
+:Result<A>
+= Value(Environment, A)
+| Interrupt(Environment, InterruptReason
+;
+
+:InterruptReason
+= Error(EvalError)
+| Signal(EvalControl)
+;
+stop
+@enduml

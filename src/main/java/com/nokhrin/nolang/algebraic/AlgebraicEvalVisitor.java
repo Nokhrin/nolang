@@ -45,7 +45,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     @Override
     public Eval<Value> visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
-        return evalTerm(ctx.term()).widen();
+        return EvalCombinators.upcastToValue(evalTerm(ctx.term()));
     }
 
     @Override
@@ -60,7 +60,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     private Eval<Value> evalVariable(AlgebraicParser.VariableAtomContext ctx) {
         String varName = ctx.ID().getText();
-        return EnvironmentCombinators.getEnvironment()
+        return ContextCombinators.getContext()
             .flatMap(env -> env.scope().lookup(varName).fold(Eval::raiseError, Eval::pure));
     }
 
@@ -71,9 +71,9 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     private Eval<Value> evalFuncCall(AlgebraicParser.FuncCallAtomContext ctx) {
         String funcName = ctx.ID().getText();
         List<Eval<Value>> argsEval =
-            ctx.arguments().term().stream().<Eval<Value>>map(term -> evalTerm(term).widen()).toList();
+            ctx.arguments().term().stream().map(term -> EvalCombinators.upcastToValue(evalTerm(term))).toList();
         return Folds.collectArguments(argsEval)
-            .flatMap(args -> EnvironmentCombinators.callFunction(funcName, args));
+            .flatMap(args -> ContextCombinators.callFunction(funcName, args));
     }
 
     private Eval<NumericValue> evalPostfix(AlgebraicParser.PostfixContext ctx) {

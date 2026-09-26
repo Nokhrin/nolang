@@ -18,7 +18,7 @@ package "nolang.common" {
 
 }
 package "nolang.common.values" {
-    interface Value {
+    interface Returned {
     +match(onNumeric, onBool, onVoid): T
     }
       interface NumericValue {}
@@ -32,15 +32,6 @@ package "nolang.common.values" {
 
 
 package "nolang.common.core" {
-    interface ControlSignal{
-    }
-    record Break
-    record Continue
-    record Return
-    ControlSignal <|.. Break
-    ControlSignal <|.. Continue
-    ControlSignal <|.. Return
-
     interface Either<L,R>{
         left()
         right()
@@ -58,22 +49,79 @@ package "nolang.common.core" {
     record Right
 
 
+    interface Eval{}
+    record Environment
+
+    Eval ..> Result : returns
+    Eval ..> Environment : uses
+
+    interface Result<A>{
+        + environment: Environment
+        + value: A
+    }
+    record Returned
+    record Interrupted
+
+    Result <|.. Returned
+    Result <|.. Interrupted
+
+    interface InterruptReason{}
+    record Control {
+        + signal
+    }
+    record Error{
+        + error
+    }
+
+    interface EvalControl{
+    }
+    record Break
+    record Continue
+    record Return
+
+    EvalControl <|.. Break
+    EvalControl <|.. Continue
+    EvalControl <|.. Return
+
     interface EvalError{}
     record SyntaxError
     record ArithmeticError
     record TypeError
     record ArityError
-    interface Function{
+
+    EvalError <|.. SyntaxError
+    EvalError <|.. ArithmeticError
+    EvalError <|.. TypeError
+    EvalError <|.. ArityError
+
+
+
+    record Function {
+        signature: FunctionSignature
+        body: FunctionBody
+        closureScope: Scope
+        helpText: String
+        call(args): Eval<Value>
     }
-    record BuiltIn
-    record UserDefined
+
+    record FunctionSignature{
+        +name()
+        +parameters()
+        +returnType()
+        +arity():Arity
+    }
+
+    record Scope{}
 
     interface FunctionBody{}
 
-    interface Result{}
-    record Success
-    record Failure
-    record Control
+    record FunctionRegistry{}
+    FunctionRegistry o-- Function
+    Function --> FunctionSignature
+    Function --> FunctionBody
+    Function --> Scope
+    Function ..> Eval : returns
+
 
     interface ScopeError{}
     record UndefinedVariable
@@ -82,33 +130,8 @@ package "nolang.common.core" {
     record UndefinedFunction
 
     class Arity{}
-    record Environment{
-        withScope
-        withRegistry
-        withOutput
-        scope
-        registry
-        outputBuffer
-    }
 
-    interface Eval{
-        run()
-        pure()
-        raiseError()
-        raiseSignal()
-        flatMap()
-        map()
-        widen()
-    }
 
-    record FunctionRegistry{}
-    record FunctionSignature{
-        +name()
-        +parameters()
-        +returnType()
-        +arity():Arity
-    }
-    record Scope{}
 
     enum Unit{}
 
@@ -134,8 +157,8 @@ package "nolang.common.combinators" {
     +right(): NumericValue
     +foldLeftNumeric(): Eval<NumericValue>
     +foldLeftAssociativeNumeric(): Eval<NumericValue>
-    +foldLeftDynamic(): Eval<Value>
-    +collectArguments(): Eval<List<Value>>
+    +foldLeftDynamic(): Eval<Returned>
+    +collectArguments(): Eval<List<Returned>>
     }
     class ScopeCombinators{}
 
@@ -149,7 +172,7 @@ package "nolang.common.combinators" {
     }
 
     class EnvironmentCombinators{
-        +callFunction(): Eval<Value>
+        +callFunction(): Eval<Returned>
         +getEnvironment(): Eval<Environment>
         +modifyEnvironment(): Eval<Unit>
     }
@@ -197,7 +220,7 @@ class AlgebraicSyntaxAnalyzer{}
     Type <|.. BoolType
     Type <|.. VoidType
 
-    Type ..> Value : uses
+    Type ..> Returned : uses
     BuiltInFunctions ..> Type : uses
     Declaration ..> Type : uses
     FunctionSignature ..> Type : uses
@@ -215,25 +238,12 @@ class AlgebraicSyntaxAnalyzer{}
     Scope ..> Either : returns
     Scope ..> Scope : uses
     Scope ..> ScopeError : uses
-    Scope ..> Value : uses
-
-    Result <|.. Success
-    Result <|.. Failure
-    Result <|.. Control
+    Scope ..> Returned : uses
 
     FunctionRegistry ..> Eval : uses
     FunctionRegistry ..> FunctionSignature : uses
     FunctionRegistry ..> FunctionBody : uses
     FunctionRegistry ..> Scope : uses
-
-    Function <|.. BuiltIn
-    Function <|.. UserDefined
-
-
-    EvalError <|.. SyntaxError
-    EvalError <|.. ArithmeticError
-    EvalError <|.. TypeError
-    EvalError <|.. ArityError
 
     Environment ..> FunctionRegistry : uses
     Environment ..> Scope : uses
@@ -249,7 +259,7 @@ class AlgebraicSyntaxAnalyzer{}
     BuiltInFunctions ..> Arity : uses
     BuiltInFunctions ..> FunctionParameter : uses
     ScopeCombinators ..> EnvironmentCombinators : uses
-    FunctionParameter ..> Value : uses
+    FunctionParameter ..> Returned : uses
 
     EnvironmentCombinators ..> Eval : returns
     EnvironmentCombinators ..> Result : uses
@@ -279,9 +289,9 @@ class AlgebraicSyntaxAnalyzer{}
 
     NumericValue <|-- IntValue
     NumericValue <|-- RealValue
-    Value <|.. NumericValue
-    Value <|-- BoolValue
-    Value <|-- VoidValue
+    Returned <|.. NumericValue
+    Returned <|-- BoolValue
+    Returned <|-- VoidValue
 
     BuiltIn ..> EnvironmentCombinators : uses
     UserDefined ..> EnvironmentCombinators : uses

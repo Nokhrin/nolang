@@ -27,7 +27,7 @@ public class BuiltInFunctions {
     }
 
     private static Function pow() {
-        return new Function.BuiltIn(
+      return new Function(
             new FunctionSignature(
                 "pow",
                 List.of(
@@ -40,41 +40,42 @@ public class BuiltInFunctions {
                 Value exponentArg = args.get(1);
                 return switch (baseArg) {
                     case NumericValue.IntValue intValueBase -> switch (exponentArg) {
-                        case NumericValue.IntValue intValueExp -> Numeric.pow(intValueBase, intValueExp).widen();
-                        case NumericValue.RealValue realValueExp -> Numeric.pow(intValueBase, realValueExp).widen();
+                      case NumericValue.IntValue intValueExp ->
+                        EvalCombinators.upcastToValue(Numeric.pow(intValueBase, intValueExp));
+                      case NumericValue.RealValue realValueExp ->
+                        EvalCombinators.upcastToValue(Numeric.pow(intValueBase, realValueExp));
                         default -> Eval.raiseError(
                             new EvalError.TypeError(
-                                "pow expected numeric, got base: "
-                                    + baseArg
-                                    + ", "
-                                    + "got exponent: "
-                                    + exponentArg));
+                              "pow expected numeric, got base: %s, got exponent: %s"
+                                .formatted(baseArg, exponentArg)
+                            )
+                        );
                     };
                     case NumericValue.RealValue intBase -> switch (exponentArg) {
-                        case NumericValue.IntValue intValueExp -> Numeric.pow(intBase, intValueExp).widen();
-                        case NumericValue.RealValue realValueExp -> Numeric.pow(intBase, realValueExp).widen();
+                      case NumericValue.IntValue intValueExp ->
+                        EvalCombinators.upcastToValue(Numeric.pow(intBase, intValueExp));
+                      case NumericValue.RealValue realValueExp ->
+                        EvalCombinators.upcastToValue(Numeric.pow(intBase, realValueExp));
                         default -> Eval.raiseError(
                             new EvalError.TypeError(
-                                "pow expected numeric, got base: "
-                                    + baseArg
-                                    + ", "
-                                    + "got exponent: "
-                                    + exponentArg));
+                              "pow expected numeric, got base: %s, got exponent: %s"
+                                .formatted(baseArg, exponentArg)
+                            )
+                        );
                     };
                     default -> Eval.raiseError(
                         new EvalError.TypeError(
-                            "pow expected numeric, got base: "
-                                + baseArg
-                                + ", "
-                                + "got exponent: "
-                                + exponentArg));
+                          "pow expected numeric, got base: %s, got exponent: %s"
+                            .formatted(baseArg, exponentArg)
+                        )
+                    );
                 };
             },
             "pow(base, exponent) - <base> raised to <exponent>\nExample: pow(2, 3) -> 8");
     }
 
     private static Function abs() {
-        return new Function.BuiltIn(
+      return new Function(
             new FunctionSignature(
                 "abs",
                 List.of(new Declaration.Parameter("x", new Type.NumericType())),
@@ -83,8 +84,8 @@ public class BuiltInFunctions {
             (_, args) -> {
                 Value value = args.getFirst();
                 return switch (value) {
-                    case NumericValue.IntValue anIntValue -> Numeric.abs(anIntValue).widen();
-                    case NumericValue.RealValue realValue -> Numeric.abs(realValue).widen();
+                  case NumericValue.IntValue anIntValue -> EvalCombinators.upcastToValue(Numeric.abs(anIntValue));
+                  case NumericValue.RealValue realValue -> EvalCombinators.upcastToValue(Numeric.abs(realValue));
                     case Value.BoolValue boolValue -> Eval.raiseError(
                         new EvalError.TypeError("Numeric expected, " + "got: " + boolValue.value()));
                     case Value.VoidValue aVoidValue -> Eval.raiseError(
@@ -95,7 +96,7 @@ public class BuiltInFunctions {
     }
 
     private static Function sin() {
-        return new Function.BuiltIn(
+      return new Function(
             new FunctionSignature(
                 "sin",
                 List.of(new Declaration.Parameter("x", new Type.NumericType())),
@@ -104,8 +105,8 @@ public class BuiltInFunctions {
             (_, args) -> {
                 Value number = args.getFirst();
                 return switch (number) {
-                    case NumericValue.IntValue anIntValue -> Numeric.abs(anIntValue).widen();
-                    case NumericValue.RealValue realValue -> Numeric.abs(realValue).widen();
+                  case NumericValue.IntValue anIntValue -> EvalCombinators.upcastToValue(Numeric.sin(anIntValue));
+                  case NumericValue.RealValue realValue -> EvalCombinators.upcastToValue(Numeric.sin(realValue));
                     case Value.BoolValue boolValue -> Eval.raiseError(
                         new EvalError.TypeError("Numeric expected, " + "got: " + boolValue.value()));
                     case Value.VoidValue aVoidValue -> Eval.raiseError(
@@ -116,10 +117,10 @@ public class BuiltInFunctions {
     }
 
     private static Function print() {
-        return new Function.BuiltIn(
+      return new Function(
             new FunctionSignature("print", List.of(), new Type.VoidType(), Arity.atLeast(0)),
             (_, args) ->
-                EnvironmentCombinators.modifyEnvironment(
+              ContextCombinators.updateContext(
                         environment -> {
                             List<String> outputBuffer = new ArrayList<>(environment.outputBuffer());
                             for (Value value : args) {

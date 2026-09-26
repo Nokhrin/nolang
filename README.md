@@ -11,6 +11,8 @@
 
 # Архитектура
 
+`com.nokhrin.nolang.common` - вычислительный блок
+
 [Диаграмма - система, блоки, компоненты](docs/arch.drawio)
 [Диаграмма - код](docs/classes.puml)
 
@@ -144,8 +146,8 @@ Value.match - сужение по Optional
 ```plantuml
 package "nolang.functional" {
     interface "Eval<A>" {
-        +run(environment: Environment): Result<A>
-        {static} +pure(value: A): Eval<A>
+        +run(executionContext: Environment): Result<A>
+        {static} +pure(returned: A): Eval<A>
         {static} +raiseError(error: EvalError): Eval<A>
         {static} +raiseSignal(signal: ControlSignal): Eval<A>
         +flatMap(function: Function<A, Eval<B>>): Eval<B>
@@ -155,21 +157,21 @@ package "nolang.functional" {
 
 
     interface "Result<A>" <<sealed>> {
-        +environment(): Environment
+        +executionContext(): Environment
     }
 
     record "Result.Success<A>" {
-        +environment: Environment
-        +value: A
+        +executionContext: Environment
+        +returned: A
     }
 
     record "Result.Failure<A>" {
-        +environment: Environment
+        +executionContext: Environment
         +error: EvalError
     }
 
     record "Result.Control<A>" {
-        +environment: Environment
+        +executionContext: Environment
         +signal: ControlSignal
     }
 

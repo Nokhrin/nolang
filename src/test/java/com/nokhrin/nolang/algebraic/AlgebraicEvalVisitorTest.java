@@ -1,27 +1,26 @@
 package com.nokhrin.nolang.algebraic;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import com.nokhrin.nolang.common.core.Environment;
-import com.nokhrin.nolang.common.core.FunctionRegistry;
-import com.nokhrin.nolang.common.core.Result;
-import com.nokhrin.nolang.common.core.Scope;
 import com.nokhrin.nolang.common.combinators.BuiltInFunctions;
+import com.nokhrin.nolang.common.core.EvalResult;
+import com.nokhrin.nolang.common.core.ExecutionContext;
+import com.nokhrin.nolang.common.core.FunctionRegistry;
+import com.nokhrin.nolang.common.core.Scope;
 import com.nokhrin.nolang.common.values.NumericValue;
-
-import java.io.PrintStream;
-import java.util.List;
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.PrintStream;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class AlgebraicEvalVisitorTest {
-    Environment environment;
+    ExecutionContext executionContext;
     AlgebraicInterpreter interpreter;
 
     @BeforeEach
@@ -30,7 +29,7 @@ public class AlgebraicEvalVisitorTest {
         Scope scope = new Scope();
         FunctionRegistry registry = new FunctionRegistry(BuiltInFunctions.create());
         List<String> outputBuffer = List.of();
-        environment = new Environment(scope, registry, outputBuffer);
+        executionContext = new ExecutionContext(scope, registry, outputBuffer);
         interpreter = AlgebraicInterpreter.monadic();
     }
 
@@ -53,8 +52,8 @@ public class AlgebraicEvalVisitorTest {
 
     @ParameterizedTest
     @MethodSource("arithmeticTestData")
-    void evaluateArithmetic_actualEqualsExpected(String input, Result expected) {
-        assertEquals(expected, interpreter.interpret(input, environment));
+    void evaluateArithmetic_actualEqualsExpected(String input, EvalResult<NumericValue> expected) {
+        assertEquals(expected, interpreter.interpret(input, executionContext));
     }
 
     static Stream<Arguments> variableAssignments() {
@@ -68,17 +67,17 @@ public class AlgebraicEvalVisitorTest {
 
     @ParameterizedTest
     @MethodSource("variableAssignments")
-    void evaluateVariableAssignments_actualEqualsExpected(String input, Result expected) {
-        assertEquals(expected, interpreter.interpret(input, environment));
+    void evaluateVariableAssignments_actualEqualsExpected(String input, EvalResult expected) {
+        assertEquals(expected, interpreter.interpret(input, executionContext));
     }
 
     @Test
     void evaluateUndefined_throwsException() {
-        assertThrows(IllegalStateException.class, () -> interpreter.interpret("a", environment));
+        assertThrows(IllegalStateException.class, () -> interpreter.interpret("a", executionContext));
     }
 
     @Test
     void evaluateDivisionByZero_throwsException() {
-        assertThrows(ArithmeticException.class, () -> interpreter.interpret("1/0", environment));
+        assertThrows(ArithmeticException.class, () -> interpreter.interpret("1/0", executionContext));
     }
 }

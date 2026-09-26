@@ -1,6 +1,7 @@
 package com.nokhrin.nolang.common.core;
 
 import com.nokhrin.nolang.common.values.Value;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +12,9 @@ public record FunctionRegistry(Map<String, Function> functions) {
     functions = Map.copyOf(functions);
   }
 
-  public boolean isBuiltin(String funcName) {
-    return functions.containsKey(funcName);
-  }
+  public boolean contains(String funcName) {
+        return functions.containsKey(funcName);
+    }
 
   public Optional<Function> fetch(String funcName) {
     return Optional.ofNullable(functions.get(funcName));
@@ -26,8 +27,12 @@ public record FunctionRegistry(Map<String, Function> functions) {
   }
 
   public FunctionRegistry define(FunctionSignature signature, FunctionBody body, Scope scope) {
+      return define(signature, body, scope, "");
+  }
+
+    public FunctionRegistry define(FunctionSignature signature, FunctionBody body, Scope scope, String helpText) {
     Map<String, Function> childFunctions = new HashMap<>(functions);
-    childFunctions.put(signature.name(), new Function.UserDefined(signature, body, scope));
+        childFunctions.put(signature.name(), new Function(signature, body, scope, helpText));
     return new FunctionRegistry(Map.copyOf(childFunctions));
   }
 
