@@ -1,19 +1,28 @@
-package com.nokhrin.nolang.common;
+package com.nokhrin.nolang.common.operations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import com.nokhrin.nolang.common.operations.Numeric;
+import com.nokhrin.nolang.common.core.*;
 import com.nokhrin.nolang.common.values.NumericValue;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class NumericTypeExamplesTest {
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
-  static Stream<Arguments> additionCases() {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+public class NumericTest {
+  private final ExecutionContext context = new ExecutionContext(
+    new Scope(),
+    new FunctionRegistry(Map.of()),
+    List.of()
+  );
+
+
+  static Stream<Arguments> additionSubtractionMultiplicationCases() {
     return Stream.of(
         Arguments.of(
             new NumericValue.IntValue(5),
@@ -42,10 +51,20 @@ public class NumericTypeExamplesTest {
   }
 
   @ParameterizedTest
-  @MethodSource("additionCases")
+  @MethodSource("additionSubtractionMultiplicationCases")
   public void add_validOperands_expectedValue(
       NumericValue left, NumericValue right, NumericValue expected) {
-    assertEquals(expected, Numeric.add(left, right));
+
+    Eval<NumericValue> leftEval = Eval.pure(left);
+    Eval<NumericValue> rightEval = Eval.pure(right);
+    Eval<NumericValue> expectedEval = Eval.pure(expected);
+
+    assertEquals(
+      expectedEval.run(context),
+      leftEval.flatMap(a ->
+        rightEval.flatMap(b ->
+          Numeric.add(a, b))).run(context)
+    );
   }
 
   static Stream<Arguments> divisionCases() {
@@ -80,7 +99,16 @@ public class NumericTypeExamplesTest {
   @MethodSource("divisionCases")
   public void div_validOperands_expectedValue(
       NumericValue left, NumericValue right, NumericValue expected) {
-    assertEquals(Numeric.div(left, right), expected);
+    Eval<NumericValue> leftEval = Eval.pure(left);
+    Eval<NumericValue> rightEval = Eval.pure(right);
+    Eval<NumericValue> expectedEval = Eval.pure(expected);
+
+    assertEquals(
+      expectedEval.run(context),
+      leftEval.flatMap(a ->
+        rightEval.flatMap(b ->
+          Numeric.div(a, b))).run(context)
+    );
   }
 
   static Stream<Arguments> negationCases() {
@@ -95,13 +123,28 @@ public class NumericTypeExamplesTest {
   @ParameterizedTest
   @MethodSource("negationCases")
   public void neg_validOperand_expectedValue(NumericValue operand, NumericValue expected) {
-    assertEquals(expected, Numeric.neg(operand));
+    Eval<NumericValue> operandEval = Eval.pure(operand);
+    Eval<NumericValue> expectedEval = Eval.pure(expected);
+
+    assertEquals(
+      expectedEval.run(context),
+      operandEval.flatMap(Numeric::neg).run(context)
+    );
   }
 
   @Test
-  void div_byZero_throwsArithmeticException() {
-    assertThrows(
-        ArithmeticException.class,
-        () -> Numeric.div(new NumericValue.IntValue(1), new NumericValue.IntValue(0)));
+  void divisionByZero_throwsArithmeticException() {
+    NumericValue dividend = new NumericValue.IntValue(1);
+    NumericValue divisor = new NumericValue.IntValue(0);
+
+    Eval<NumericValue> divisionByZero = Numeric.div(dividend, divisor);
+
+    EvalResult<NumericValue> result = divisionByZero.run(context);
+
+    switch (result) {
+      case EvalResult.Interrupted<NumericValue> interrupted ->
+        assertInstanceOf(InterruptReason.class, interrupted.reason());
+      case EvalResult.Returned<NumericValue> _ -> throw new AssertionError("Interruption expected, value returned");
+    }
   }
 }
