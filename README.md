@@ -1,7 +1,8 @@
 # Разработка интерпретатора языка программирования Nolang
 
-Система предназначена для разбора, семантического анализа и выполнения математических выражений и
-алгоритмов, описанных
+# Постановка
+
+Система предназначена для разбора, семантического анализа и выполнения математических выражений и алгоритмов, описанных
 в текстовом виде.
 Система должна поддерживать три уровня сложности:
 
@@ -76,6 +77,8 @@
 3. Отсутствие побочных эффектов. Вычисление представлено значением типа `Eval<A>`, которое при
    исполнении возвращает `Result<A>`. Вывод накапливается в `Environment.outputBuffer`, а не
    выполняется через глобальный `PrintStream`.
+
+4. Проверка ошибок как значений, не побочных сигналов
 
 ### Формула
 
@@ -249,35 +252,12 @@ java -jar target/nolang-1.0-SNAPSHOT.jar algebraic
 ```
 
 ```text
-Ввод:
-print(abs(-3))
-
-stdout:
+> print(abs(-3))
 3
-
-stderr:
-пусто
-
-Статус:
-успех
-```
-
-```text
-Ввод:
-print(1/0)
-
-stdout:
-пусто
-
-stderr:
+> print(1/0)
 Division by zero
-
-Статус:
-ошибка выполнения, EvalError.ArithmeticError
 ```
 
-Примечание: оператор присваивания и выражения без `print(...)` не производят вывода. Вывод
-формируется только через `print(...)` и накапливается в `Environment.outputBuffer`.
 
 ### Выполнение из файла
 
@@ -413,11 +393,15 @@ grun com.nokhrin.nolang.StaticTyped prog -gui < src/test/resources/StaticTyped/p
 grun com.nokhrin.nolang.StaticTyped tokens -tokens < src/test/resources/StaticTyped/possible_problems.txt
 ```
 
-## Стиль кода
+## Проверка кода
 
 ```shell
+# Проверка тестового покрытия
+mvn verify
+# результат тестового покрытия: target/site/jacoco
+# результат мутационного анализа: target/pit-reports/
+# Стиль
 mvn spotless:apply
 mvn spotless:check
 mvn checkstyle:check
 ```
-

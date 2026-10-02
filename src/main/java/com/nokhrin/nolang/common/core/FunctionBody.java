@@ -4,5 +4,5 @@ import com.nokhrin.nolang.common.values.Value;
 import java.util.List;
 
 public interface FunctionBody {
-  Eval<Value> execute(Scope functionScope, List<Value> args);
+  Eval<Value> execute(ExecutionContext executionContext, List<Value> args);
 }

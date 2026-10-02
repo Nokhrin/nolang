@@ -32,6 +32,65 @@ public enum NumericComparisonOperation implements RelationOperation<NumericValue
     };
   }
 
+  public static Eval<Value.BoolValue> compare(
+      NumericValue left, NumericComparisonOperation op, NumericValue right) {
+    boolean result =
+        switch (op) {
+          case GT -> greaterThan(left, right);
+          case LT -> lessThan(left, right);
+          case EQ -> equals(left, right);
+          case NEQ -> !equals(left, right);
+          case GEQ -> !lessThan(left, right);
+          case LEQ -> !greaterThan(left, right);
+        };
+    return Eval.pure(new Value.BoolValue(result));
+  }
+
+  private static boolean equals(NumericValue left, NumericValue right) {
+    return switch (left) {
+      case NumericValue.IntValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() == r.number();
+            case NumericValue.RealValue r -> l.number() == r.number();
+          };
+      case NumericValue.RealValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() == r.number();
+            case NumericValue.RealValue r -> l.number() == r.number();
+          };
+    };
+  }
+
+  private static boolean greaterThan(NumericValue left, NumericValue right) {
+    return switch (left) {
+      case NumericValue.IntValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() > r.number();
+            case NumericValue.RealValue r -> l.number() > r.number();
+          };
+      case NumericValue.RealValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() > r.number();
+            case NumericValue.RealValue r -> l.number() > r.number();
+          };
+    };
+  }
+
+  private static boolean lessThan(NumericValue left, NumericValue right) {
+    return switch (left) {
+      case NumericValue.IntValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() < r.number();
+            case NumericValue.RealValue r -> l.number() < r.number();
+          };
+      case NumericValue.RealValue l ->
+          switch (right) {
+            case NumericValue.IntValue r -> l.number() < r.number();
+            case NumericValue.RealValue r -> l.number() < r.number();
+          };
+    };
+  }
+
   @Override
   public String operator() {
     return operator;
@@ -39,6 +98,6 @@ public enum NumericComparisonOperation implements RelationOperation<NumericValue
 
   @Override
   public Eval<Value.BoolValue> apply(NumericValue left, NumericValue right) {
-    return Logical.compare(left, this, right);
+    return compare(left, this, right);
   }
 }

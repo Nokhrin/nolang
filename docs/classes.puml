@@ -21,6 +21,7 @@ package "nolang.common.values" {
     interface Returned {
     +match(onNumeric, onBool, onVoid): T
     }
+      interface Value {}
       interface NumericValue {}
 
     record IntValue
@@ -50,20 +51,20 @@ package "nolang.common.core" {
 
 
     interface Eval{}
-    record Environment
+    record ExecutionContext
 
-    Eval ..> Result : returns
-    Eval ..> Environment : uses
+    Eval ..> EvalResult : returns
+    Eval ..> ExecutionContext : uses
 
-    interface Result<A>{
-        + environment: Environment
+    interface EvalResult<A>{
+        + environment: ExecutionContext
         + value: A
     }
     record Returned
     record Interrupted
 
-    Result <|.. Returned
-    Result <|.. Interrupted
+    EvalResult <|.. Returned
+    EvalResult <|.. Interrupted
 
     interface InterruptReason{}
     record Control {
@@ -164,7 +165,7 @@ package "nolang.common.combinators" {
 
     class ValueParser{
     +parseNumber(): Eval<NumericValue>
-    +parseBoolean(): Eval<Value.Bool>
+    +parseBoolean(): Eval<Value.BoolValue>
     }
 
     class NumericValues {
@@ -173,7 +174,7 @@ package "nolang.common.combinators" {
 
     class EnvironmentCombinators{
         +callFunction(): Eval<Returned>
-        +getEnvironment(): Eval<Environment>
+        +getEnvironment(): Eval<ExecutionContext>
         +modifyEnvironment(): Eval<Unit>
     }
 
@@ -189,8 +190,8 @@ package "nolang.common.operations" {
     interface "RelationOperation<L, R>"
     {
     + operator(): String
-    + apply(Eval<L> left, Eval<R> right): Eval<Value.Bool>
-    + {default} apply(Eval<L> left, Eval<R> right): Eval<Value.Bool>
+    + apply(Eval<L> left, Eval<R> right): Eval<Value.BoolValue>
+    + {default} apply(Eval<L> left, Eval<R> right): Eval<Value.BoolValue>
     }
     interface "UnaryOperation<T>" {
     + operator(): String
@@ -201,6 +202,7 @@ package "nolang.common.operations" {
     enum UnaryLogicalOperation{}
     enum UnaryNumericOperation{}
     enum NumericComparisonOperation{}
+    enum BooleanComparisonOperation{}
     enum BinaryLogicalOperation{}
     enum BinaryNumericOperation{}
     class Logical{}
@@ -245,14 +247,14 @@ class AlgebraicSyntaxAnalyzer{}
     FunctionRegistry ..> FunctionBody : uses
     FunctionRegistry ..> Scope : uses
 
-    Environment ..> FunctionRegistry : uses
-    Environment ..> Scope : uses
+    ExecutionContext ..> FunctionRegistry : uses
+    ExecutionContext ..> Scope : uses
 
     Eval ..> EvalError : uses
-    Eval ..> Environment : uses
-    Eval ..> Result : returns
+    Eval ..> ExecutionContext : uses
+    Eval ..> EvalResult : returns
 
-    UserDefined ..> Result : returns
+    UserDefined ..> EvalResult : returns
 
     Folds ..> NumericValues : uses
     BuiltInFunctions ..> EnvironmentCombinators : uses
@@ -262,7 +264,7 @@ class AlgebraicSyntaxAnalyzer{}
     FunctionParameter ..> Returned : uses
 
     EnvironmentCombinators ..> Eval : returns
-    EnvironmentCombinators ..> Result : uses
+    EnvironmentCombinators ..> EvalResult : uses
 
 
     FunctionBody ..> Eval : returns
@@ -272,20 +274,29 @@ class AlgebraicSyntaxAnalyzer{}
     Folds ..> Eval : returns
     Folds ..> NumericValue : returns
 
-    "UnaryOperation<T>" <|.. UnaryLogicalOperation : UnaryOperation<Value.Bool>
+    "UnaryOperation<T>" <|.. UnaryLogicalOperation : UnaryOperation<Value.BoolValue>
     "UnaryOperation<T>" <|.. UnaryNumericOperation : UnaryOperation<NumericValue>
     "RelationOperation<L, R>" <|.. NumericComparisonOperation : RelationOperation<NumericValue, NumericValue>
-    "BinaryOperation<T>" <|.. BinaryLogicalOperation : BinaryOperation<Value.Bool>
+    "RelationOperation<L, R>" <|.. BooleanComparisonOperation : RelationOperation<Value.BoolValue, Value.BoolValue>
+    "BinaryOperation<T>" <|.. BinaryLogicalOperation : BinaryOperation<Value.BoolValue>
     "BinaryOperation<T>" <|.. BinaryNumericOperation : BinaryOperation<NumericValue>
 
     UnaryLogicalOperation ..> Logical : uses
     UnaryNumericOperation ..> Numeric : uses
     NumericComparisonOperation ..> Numeric : uses
+
+    BooleanComparisonOperation ..> RelationOperation : uses
+    BooleanComparisonOperation ..> Eval : returns
+
     BinaryLogicalOperation ..> Logical : uses
     BinaryNumericOperation ..> Numeric : uses
 
-    Logical ..> Eval : returns Eval<Value.Bool>
+    Logical ..> Eval : returns Eval<Value.BoolValue>
     Numeric ..> Eval : returns Eval<NumericValue>
+
+    Value <|-- NumericValue
+    Value <|-- BoolValue
+    Value <|-- VoidValue
 
     NumericValue <|-- IntValue
     NumericValue <|-- RealValue
@@ -308,11 +319,11 @@ class AlgebraicSyntaxAnalyzer{}
 
     AlgebraicRunner ..> BuiltInFunctions : uses
     AlgebraicRunner ..> AlgebraicInterpreter : uses
-    AlgebraicRunner ..> Result : returns
+    AlgebraicRunner ..> EvalResult : returns
 
 
     AlgebraicInterpreter ..> AlgebraicSyntaxAnalyzer : uses
-    AlgebraicInterpreter ..> Result : returns
+    AlgebraicInterpreter ..> EvalResult : returns
 
 package "nolang.dynamic_typed" {
 'planned

@@ -7,7 +7,6 @@ import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.core.FunctionRegistry;
 import com.nokhrin.nolang.common.core.Scope;
 import com.nokhrin.nolang.common.values.Value;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -16,17 +15,20 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * Точка входа для REPL алгебраического калькулятора.
- */
+/** Точка входа для REPL алгебраического калькулятора. */
 public class AlgebraicRunner {
-  private static ExecutionContext handleResult(EvalResult<Value> result, PrintStream output, PrintStream error) {
-    result.executionContext().outputBuffer().forEach(output::println);
+  private static ExecutionContext handleResult(
+      EvalResult<Value> result, PrintStream stdout, PrintStream error) {
+    result.executionContext().stdout().forEach(stdout::println);
 
     return switch (result) {
-      case EvalResult.Returned<Value> returned -> returned.executionContext().withOutput(List.of());
+      case EvalResult.Returned<Value> returned -> {
+        stdout.flush();
+        yield returned.executionContext().withOutput(List.of());
+      }
 
       case EvalResult.Interrupted<Value> interrupted -> {
+        stdout.flush();
         error.println(interrupted.reason().message());
         error.flush();
         yield interrupted.executionContext().withOutput(List.of());
@@ -39,7 +41,7 @@ public class AlgebraicRunner {
     PrintStream output = System.out;
     PrintStream error = System.err;
     FunctionRegistry functionRegistry = new FunctionRegistry(BuiltInFunctions.create());
-    AlgebraicInterpreter interpreter = AlgebraicInterpreter.monadic();
+    AlgebraicInterpreter interpreter = AlgebraicInterpreter.create();
 
     if (args.length == 1) {
       executeFile(interpreter, args[0], functionRegistry, output, error);
@@ -49,41 +51,52 @@ public class AlgebraicRunner {
     runInteractive(interpreter, functionRegistry, input, output, error);
   }
 
-  private static void executeFile(AlgebraicInterpreter interpreter, String filePath, FunctionRegistry functionRegistry, PrintStream output, PrintStream error) {
+  private static void executeFile(
+      AlgebraicInterpreter interpreter,
+      String filePath,
+      FunctionRegistry functionRegistry,
+      PrintStream stdout,
+      PrintStream stderr) {
     Path path = Path.of(filePath);
     if (!Files.exists(path)) {
-      error.println("File not found: " + filePath);
-      error.flush();
+      stdout.flush();
+      stderr.println("File not found: " + filePath);
+      stderr.flush();
       return;
     }
 
-    ExecutionContext executionContext = new ExecutionContext(new Scope(), functionRegistry, List.of());
+    ExecutionContext executionContext =
+        new ExecutionContext(new Scope(), functionRegistry, List.of());
 
     try {
       String fileContent = Files.readString(path);
-
-      EvalResult<Value> result = interpreter.interpret(fileContent, executionContext);
-
-      handleResult(result, output, error);
+      EvalResult<Value> result = interpreter.evaluate(fileContent, executionContext);
+      handleResult(result, stdout, stderr);
 
     } catch (IOException e) {
-      error.println("IO error: " + e);
-      error.flush();
+      stdout.flush();
+      stderr.println("IO error: " + e);
+      stderr.flush();
     }
-    output.flush();
   }
 
-  private static void runInteractive(AlgebraicInterpreter interpreter, FunctionRegistry functionRegistry, InputStream input, PrintStream output, PrintStream error) {
-    Scanner scanner = new Scanner(input);
-    output.println("Algebraic Interpreter\n'/h' for usage info, '/q' to quit");
-    output.flush();
+  private static void runInteractive(
+      AlgebraicInterpreter interpreter,
+      FunctionRegistry functionRegistry,
+      InputStream stdin,
+      PrintStream stdout,
+      PrintStream stderr) {
+    Scanner scanner = new Scanner(stdin);
+    stdout.println("Algebraic Interpreter\n'/h' for usage info, '/q' to quit");
+    stdout.flush();
 
-    ExecutionContext executionContext = new ExecutionContext(new Scope(), functionRegistry, List.of());
+    ExecutionContext executionContext =
+        new ExecutionContext(new Scope(), functionRegistry, List.of());
 
     label:
     while (scanner.hasNextLine()) {
-      output.print("> ");
-      output.flush();
+      stdout.print("> ");
+      stdout.flush();
 
       String inputLine = scanner.nextLine().trim();
       switch (inputLine) {
@@ -92,21 +105,21 @@ public class AlgebraicRunner {
         case "/q":
           break label;
         case "/h":
-          output.println(functionRegistry.getRegistryHelp());
-          output.flush();
+          stdout.println(functionRegistry.getRegistryHelp());
+          stdout.flush();
           continue;
       }
 
       if (inputLine.startsWith("/h ")) {
         String[] funcHelpCall = inputLine.split("\\s+", 2);
-        output.println(functionRegistry.getFuncHelp(funcHelpCall[1].trim()));
-        output.flush();
+        stdout.println(functionRegistry.getFuncHelp(funcHelpCall[1].trim()));
+        stdout.flush();
         continue;
       }
 
       ExecutionContext envForOutput = executionContext.withOutput(List.of());
-      EvalResult<Value> result = interpreter.interpret(inputLine, envForOutput);
-      executionContext = handleResult(result, output, error);
+      EvalResult<Value> result = interpreter.evaluate(inputLine, envForOutput);
+      executionContext = handleResult(result, stdout, stderr);
     }
   }
 }

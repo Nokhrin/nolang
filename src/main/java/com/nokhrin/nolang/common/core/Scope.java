@@ -12,11 +12,7 @@ public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
     this(Map.of(), Optional.empty());
   }
 
-  /**
-   * Child
-   *
-   * @param parent
-   */
+  /** Child */
   public Scope(Scope parent) {
     this(Map.of(), Optional.of(parent));
   }
@@ -27,6 +23,13 @@ public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
     return new Scope(Map.copyOf(updatedBindings), parent);
   }
 
+  /**
+   * Creates var with value
+   *
+   * @param name
+   * @param value
+   * @return
+   */
   public Either<ScopeError, Scope> define(String name, Value value) {
     if (bindings.containsKey(name)) {
       return Either.left(new ScopeError.DuplicatedVariable(name));
@@ -34,10 +37,23 @@ public record Scope(Map<String, Value> bindings, Optional<Scope> parent) {
     return Either.right(withBinding(name, value));
   }
 
+  /**
+   * Creates var without value
+   *
+   * @param name
+   * @return
+   */
   public Either<ScopeError, Scope> declare(String name) {
     return define(name, Value.VoidValue.INSTANCE);
   }
 
+  /**
+   * Updates existing vars
+   *
+   * @param name
+   * @param value
+   * @return
+   */
   public Either<ScopeError, Scope> assign(String name, Value value) {
     if (bindings.containsKey(name)) {
       return Either.right(withBinding(name, value));

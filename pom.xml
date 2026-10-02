@@ -21,6 +21,9 @@
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <google-java-format.version>1.35.0</google-java-format.version>
         <archunit.version>1.5.0</archunit.version>
+      <jacoco.version>0.8.15</jacoco.version>
+      <pitest.version>1.30.0</pitest.version>
+      <pitest-junit5-plugin.version>1.2.3</pitest-junit5-plugin.version>
     </properties>
 
     <dependencies>
@@ -103,18 +106,19 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>module-info.class</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
+                          <filters>
+                            <filter>
+                              <artifact>*:*</artifact>
+                              <excludes>
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/versions/*/module-info.class</exclude>
+                                <exclude>META-INF/MANIFEST.MF</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                              </excludes>
+                            </filter>
+                          </filters>
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -140,7 +144,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>${spotless-maven-plugin.version}</version> <!-- Добавлена версия -->
+              <version>${spotless-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>spotless-check</id>
@@ -169,18 +173,86 @@
                             <exclude>**/.*</exclude>
                         </excludes>
                     </antlr4>
-                    <markdown>
-                        <flexmark/>
-                        <includes>
-                            <include>**/*.md</include>
-                        </includes>
-                        <excludes>
-                            <exclude>**/.*/**</exclude>
-                            <exclude>**/.*</exclude>
-                        </excludes>
-                    </markdown>
                 </configuration>
             </plugin>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+              <execution>
+                <id>jacoco-prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>jacoco-report</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <excludes>
+                <exclude>com/nokhrin/nolang/AlgebraicParser*</exclude>
+                <exclude>com/nokhrin/nolang/AlgebraicLexer*</exclude>
+                <exclude>com/nokhrin/nolang/AlgebraicVisitor</exclude>
+                <exclude>com/nokhrin/nolang/AlgebraicBaseVisitor</exclude>
+                <exclude>com/nokhrin/nolang/AlgebraicListener</exclude>
+                <exclude>com/nokhrin/nolang/AlgebraicBaseListener</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedParser*</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedLexer*</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedVisitor</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedBaseVisitor</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedListener</exclude>
+                <exclude>com/nokhrin/nolang/DynamicTypedBaseListener</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedParser*</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedLexer*</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedVisitor</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedBaseVisitor</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedListener</exclude>
+                <exclude>com/nokhrin/nolang/StaticTypedBaseListener</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-maven</artifactId>
+            <version>${pitest.version}</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-junit5-plugin</artifactId>
+                <version>${pitest-junit5-plugin.version}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>pitest-mutation-coverage</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>mutationCoverage</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <targetClasses>
+                <targetClass>com.nokhrin.nolang.common.*</targetClass>
+                <targetClass>com.nokhrin.nolang.algebraic.*</targetClass>
+              </targetClasses>
+              <targetTests>
+                <targetTest>com.nokhrin.nolang.*</targetTest>
+              </targetTests>
+              <excludedTestClasses>
+                <excludedTestClass>*PropertiesTest</excludedTestClass>
+              </excludedTestClasses>
+              <mutators>DEFAULTS</mutators>
+              <outputFormats>HTML,XML</outputFormats>
+              <timestampedReports>false</timestampedReports>
+            </configuration>
+          </plugin>
 
         </plugins>
     </build>
@@ -208,14 +280,14 @@
                     <plugin>
                         <groupId>com.diffplug.spotless</groupId>
                         <artifactId>spotless-maven-plugin</artifactId>
-                        <configuration>
+
+                      <configuration>
                             <skip>true</skip>
                         </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${maven-compiler-plugin.version}</version>
                         <configuration>
                             <release>${java.version}</release>
                             <failOnError>false</failOnError>
