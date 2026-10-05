@@ -18,11 +18,8 @@ package "nolang.common" {
 
 }
 package "nolang.common.values" {
-    interface Returned {
-    +match(onNumeric, onBool, onVoid): T
-    }
-      interface Value {}
-      interface NumericValue {}
+    interface Value {}
+    interface NumericValue {}
 
     record IntValue
     record BoolValue
@@ -53,18 +50,9 @@ package "nolang.common.core" {
     interface Eval{}
     record ExecutionContext
 
-    Eval ..> EvalResult : returns
-    Eval ..> ExecutionContext : uses
-
-    interface EvalResult<A>{
-        + environment: ExecutionContext
-        + value: A
-    }
+    interface EvalResult<A>
     record Returned
     record Interrupted
-
-    EvalResult <|.. Returned
-    EvalResult <|.. Interrupted
 
     interface InterruptReason{}
     record Control {
@@ -95,34 +83,19 @@ package "nolang.common.core" {
     EvalError <|.. TypeError
     EvalError <|.. ArityError
 
+    record Scope
 
+    record Function
+    record FunctionSignature
+    interface FunctionBody
 
-    record Function {
-        signature: FunctionSignature
-        body: FunctionBody
-        closureScope: Scope
-        helpText: String
-        call(args): Eval<Value>
-    }
+    interface Declaration
 
-    record FunctionSignature{
-        +name()
-        +parameters()
-        +returnType()
-        +arity():Arity
-    }
-
-    record Scope{}
-
-    interface FunctionBody{}
+    record Variable
+    record Parameter
+    record Function
 
     record FunctionRegistry{}
-    FunctionRegistry o-- Function
-    Function --> FunctionSignature
-    Function --> FunctionBody
-    Function --> Scope
-    Function ..> Eval : returns
-
 
     interface ScopeError{}
     record UndefinedVariable
@@ -135,14 +108,6 @@ package "nolang.common.core" {
 
 
     enum Unit{}
-
-    interface Declaration{ }
-    record Variable
-    record FunctionDeclaration
-    record FunctionParameter{
-        +accepts(Value value): boolean
-        }
-
 }
 
 
@@ -168,15 +133,11 @@ package "nolang.common.combinators" {
     +parseBoolean(): Eval<Value.BoolValue>
     }
 
-    class NumericValues {
-        + narrow(Value value): Eval<NumericValue>
-    }
+    class NumericValues
 
-    class EnvironmentCombinators{
-        +callFunction(): Eval<Returned>
-        +getEnvironment(): Eval<ExecutionContext>
-        +modifyEnvironment(): Eval<Unit>
-    }
+    class ContextCombinators
+    class ValueCombinators
+    class EvalCombinators
 
 }
 
@@ -228,11 +189,12 @@ class AlgebraicSyntaxAnalyzer{}
     FunctionSignature ..> Type : uses
 
     EvalError <|-- ScopeError
+    EvalError <|.. UndefinedFunction
 
     ScopeError <|.. UndefinedVariable
     ScopeError <|.. DuplicatedVariable
     ScopeError <|.. UninitializedVariable
-    ScopeError <|.. UndefinedFunction
+
 
     Either <|.. Left
     Either <|.. Right
@@ -247,29 +209,43 @@ class AlgebraicSyntaxAnalyzer{}
     FunctionRegistry ..> FunctionBody : uses
     FunctionRegistry ..> Scope : uses
 
+    FunctionRegistry o-- Function
+    Function --> FunctionSignature
+    Function --> FunctionBody
+    Function --> Scope
+    Function ..> Eval : returns
+
     ExecutionContext ..> FunctionRegistry : uses
     ExecutionContext ..> Scope : uses
 
     Eval ..> EvalError : uses
+    Eval ..> EvalControl : uses
+    Eval ..> InterruptReason : uses
     Eval ..> ExecutionContext : uses
     Eval ..> EvalResult : returns
 
-    UserDefined ..> EvalResult : returns
+    EvalResult <|.. Returned
+    EvalResult <|.. Interrupted
+
+    Returned <|.. NumericValue
+    Returned <|-- BoolValue
+    Returned <|-- VoidValue
+
 
     Folds ..> NumericValues : uses
-    BuiltInFunctions ..> EnvironmentCombinators : uses
+    BuiltInFunctions ..> ContextCombinators : uses
     BuiltInFunctions ..> Arity : uses
     BuiltInFunctions ..> FunctionParameter : uses
-    ScopeCombinators ..> EnvironmentCombinators : uses
+    ScopeCombinators ..> ContextCombinators : uses
     FunctionParameter ..> Returned : uses
 
-    EnvironmentCombinators ..> Eval : returns
-    EnvironmentCombinators ..> EvalResult : uses
+    ContextCombinators ..> Eval : returns
+    ContextCombinators ..> EvalResult : uses
 
 
     FunctionBody ..> Eval : returns
     ValueParser ..> Eval : returns
-    EnvironmentCombinators ..> Unit : returns
+    ContextCombinators ..> Unit : returns
     ScopeCombinators ..> Eval : returns
     Folds ..> Eval : returns
     Folds ..> NumericValue : returns
@@ -288,6 +264,9 @@ class AlgebraicSyntaxAnalyzer{}
     BooleanComparisonOperation ..> RelationOperation : uses
     BooleanComparisonOperation ..> Eval : returns
 
+    ValueCombinators ..> Eval : returns
+    EvalCombinators ..> Eval : returns
+
     BinaryLogicalOperation ..> Logical : uses
     BinaryNumericOperation ..> Numeric : uses
 
@@ -300,22 +279,21 @@ class AlgebraicSyntaxAnalyzer{}
 
     NumericValue <|-- IntValue
     NumericValue <|-- RealValue
-    Returned <|.. NumericValue
-    Returned <|-- BoolValue
-    Returned <|-- VoidValue
-
-    BuiltIn ..> EnvironmentCombinators : uses
-    UserDefined ..> EnvironmentCombinators : uses
 
     FunctionSignature --> FunctionParameter : parameters
     FunctionSignature --> Arity : arity
     FunctionSignature --> Type : returnType
 
+    Declaration <|.. Variable
+    Declaration <|.. Parameter
+    Declaration <|.. Function
+
+    InterruptReason <|.. Error
+    InterruptReason <|.. Control
+
     Declaration <|.. FunctionParameter
 
-    BuiltIn ..> Unit : returns
-
-    AlgebraicEvalVisitor ..> EnvironmentCombinators : uses
+    AlgebraicEvalVisitor ..> ContextCombinators : uses
 
     AlgebraicRunner ..> BuiltInFunctions : uses
     AlgebraicRunner ..> AlgebraicInterpreter : uses

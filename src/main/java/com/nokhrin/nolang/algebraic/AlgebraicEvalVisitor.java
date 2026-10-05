@@ -2,135 +2,133 @@ package com.nokhrin.nolang.algebraic;
 
 import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
-import com.nokhrin.nolang.common.combinators.*;
+import com.nokhrin.nolang.common.combinators.ContextCombinators;
+import com.nokhrin.nolang.common.combinators.EvalCombinators;
 import com.nokhrin.nolang.common.core.Eval;
-import com.nokhrin.nolang.common.core.EvalError;
-import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
-import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
+import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
-import java.util.List;
-import org.antlr.v4.runtime.tree.ParseTree;
+
+import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
-
-  @Override
-  public Eval<Value> visitProgramWithStatements(AlgebraicParser.ProgramWithStatementsContext ctx) {
-    Eval<Value> accumulator = Eval.pure(Value.VoidValue.INSTANCE);
-    for (AlgebraicParser.StatementContext statement : ctx.statement()) {
-      accumulator = accumulator.flatMap(_ -> visit(statement));
+    @Override
+    public Eval<Value> visitProgramWithStatements(AlgebraicParser.ProgramWithStatementsContext ctx) {
+        /*
+        пустая программа → Void
+один оператор → результат оператора
+несколько операторов → результат последнего
+прерывание → прерывание всей программы
+EOF игнорировать
+         */
+        return super.visitProgramWithStatements(ctx);
     }
-    return accumulator;
-  }
 
-  @Override
-  public Eval<Value> visitEmptyProgram(AlgebraicParser.EmptyProgramContext ctx) {
-    return Eval.pure(Value.VoidValue.INSTANCE);
-  }
-
-  @Override
-  public Eval<Value> visitStatement(AlgebraicParser.StatementContext ctx) {
-    return visit(ctx.assignment());
-  }
-
-  @Override
-  public Eval<Value> visitAssignStatement(AlgebraicParser.AssignStatementContext ctx) {
-    String varName = ctx.ID().getText();
-    return ScopeCombinators.assignVariable(
-        varName, EvalCombinators.upcastToValue(evalTerm(ctx.term())));
-  }
-
-  @Override
-  public Eval<Value> visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
-    return EvalCombinators.upcastToValue(evalTerm(ctx.term()));
-  }
-
-  @Override
-  public Eval<Value> visitFuncCallAtom(AlgebraicParser.FuncCallAtomContext ctx) {
-    return evalFuncCall(ctx);
-  }
-
-  @Override
-  public Eval<Value> visitVariableAtom(AlgebraicParser.VariableAtomContext ctx) {
-    return evalVariable(ctx);
-  }
-
-  private Eval<Value> evalVariable(AlgebraicParser.VariableAtomContext ctx) {
-    String varName = ctx.ID().getText();
-    return ContextCombinators.getContext()
-        .flatMap(env -> env.scope().lookup(varName).fold(Eval::raiseError, Eval::pure));
-  }
-
-  private Eval<NumericValue> evalTerm(AlgebraicParser.TermContext ctx) {
-    return Folds.foldLeftAssociativeNumeric(ctx.factor(), ctx.addOp(), this::evalNumericNode);
-  }
-
-  private Eval<Value> evalFuncCall(AlgebraicParser.FuncCallAtomContext ctx) {
-    String funcName = ctx.ID().getText();
-    List<Eval<Value>> argsEval =
-        ctx.arguments().term().stream()
-            .map(term -> EvalCombinators.upcastToValue(evalTerm(term)))
-            .toList();
-    return Folds.collectArguments(argsEval)
-        .flatMap(args -> ContextCombinators.callFunction(funcName, args));
-  }
-
-  private Eval<NumericValue> evalPostfix(AlgebraicParser.PostfixContext ctx) {
-    Eval<NumericValue> accumulator = evalAtom(ctx.atom());
-    for (AlgebraicParser.PostfixOpContext postfixOp : ctx.postfixOp()) {
-      accumulator =
-          accumulator.flatMap(
-              number ->
-                  UnaryNumericOperation.fromSymbol(postfixOp.getText())
-                      .fold(Eval::raiseError, operation -> operation.apply(number)));
+    @Override
+    public Eval<Value> visitEmptyProgram(AlgebraicParser.EmptyProgramContext ctx) {
+        return super.visitEmptyProgram(ctx);
     }
-    return accumulator;
-  }
 
-  private Eval<NumericValue> evalNumericNode(ParseTree tree) {
-    return switch (tree) {
-      case AlgebraicParser.TermContext expr -> evalTerm(expr);
-      case AlgebraicParser.FactorContext expr -> evalFactor(expr);
-      case AlgebraicParser.UnaryContext expr -> evalUnaryOrPower(expr);
-      case AlgebraicParser.PostfixContext expr -> evalPostfix(expr);
-      case AlgebraicParser.AtomContext expr -> evalAtom(expr);
-      default -> Eval.raiseError(new EvalError.SyntaxError("Unsupported numeric node: " + tree));
-    };
-  }
+    @Override
+    public Eval<Value> visitStatement(AlgebraicParser.StatementContext ctx) {
+        return super.visitStatement(ctx);
+    }
 
-  private Eval<NumericValue> evalUnaryOrPower(AlgebraicParser.UnaryContext ctx) {
-    return switch (ctx) {
-      case AlgebraicParser.UnaryExpressionContext expr ->
-          UnaryNumericOperation.applySymbol(
-              expr.unaryOp().getText(), evalUnaryOrPower(expr.unary()));
-      case AlgebraicParser.PowerExpressionContext expr ->
-          evalPostfix(expr.postfix())
-              .flatMap(
-                  base ->
-                      evalUnaryOrPower(expr.unary())
-                          .flatMap(exponent -> BinaryNumericOperation.POW.apply(base, exponent)));
-      case AlgebraicParser.PostfixExpressionContext expr -> evalPostfix(expr.postfix());
-      default ->
-          Eval.raiseError(new EvalError.SyntaxError("Unsupported unary node: " + ctx.getText()));
-    };
-  }
+    @Override
+    public Eval<Value> visitAssignStatement(AlgebraicParser.AssignStatementContext ctx) {
+        return super.visitAssignStatement(ctx);
+    }
 
-  private Eval<NumericValue> evalAtom(AlgebraicParser.AtomContext ctx) {
-    return switch (ctx) {
-      case AlgebraicParser.AbsoluteAtomContext expr ->
-          evalTerm(expr.term()).flatMap(UnaryNumericOperation.ABSOLUTE::apply);
-      case AlgebraicParser.ParenthesesAtomContext expr -> evalTerm(expr.term());
-      case AlgebraicParser.NumberAtomContext expr -> ValueParser.parseNumber(expr.NUM().getText());
-      case AlgebraicParser.FuncCallAtomContext expr ->
-          evalFuncCall(expr).flatMap(NumericValues::narrow);
-      case AlgebraicParser.VariableAtomContext expr ->
-          evalVariable(expr).flatMap(NumericValues::narrow);
-      default ->
-          Eval.raiseError(new EvalError.SyntaxError("Unsupported atom node: " + ctx.getText()));
-    };
-  }
+    @Override
+    public Eval<Value> visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
+        return super.visitTermStatement(ctx);
+    }
 
-  private Eval<NumericValue> evalFactor(AlgebraicParser.FactorContext ctx) {
-    return Folds.foldLeftAssociativeNumeric(ctx.unary(), ctx.mulOp(), this::evalNumericNode);
-  }
+    @Override
+    public Eval<Value> visitTerm(AlgebraicParser.TermContext ctx) {
+        return super.visitTerm(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitFactor(AlgebraicParser.FactorContext ctx) {
+        return super.visitFactor(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitUnaryExpression(AlgebraicParser.UnaryExpressionContext ctx) {
+        return super.visitUnaryExpression(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitPowerExpression(AlgebraicParser.PowerExpressionContext ctx) {
+        return super.visitPowerExpression(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitPostfixExpression(AlgebraicParser.PostfixExpressionContext ctx) {
+        return super.visitPostfixExpression(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitPostfix(AlgebraicParser.PostfixContext ctx) {
+        return super.visitPostfix(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitAbsoluteAtom(AlgebraicParser.AbsoluteAtomContext ctx) {
+        return super.visitAbsoluteAtom(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitParenthesesAtom(AlgebraicParser.ParenthesesAtomContext ctx) {
+        return super.visitParenthesesAtom(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitNumberAtom(AlgebraicParser.NumberAtomContext ctx) {
+        String numberStr = ctx.NUM().getText();
+        Eval<NumericValue> number = parseNumber(numberStr);
+        return EvalCombinators.upcastToValue(number);
+    }
+
+    @Override
+    public Eval<Value> visitFuncCallAtom(AlgebraicParser.FuncCallAtomContext ctx) {
+        return super.visitFuncCallAtom(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitVariableAtom(AlgebraicParser.VariableAtomContext ctx) {
+        String varName = ctx.ID().getText();
+        Eval<ExecutionContext> executionContextEval = ContextCombinators.getContext();
+        Eval<Value> varInContext = executionContextEval
+            .flatMap(executionContext ->
+                executionContext.scope().lookup(varName)
+                    .fold(Eval::raiseError, Eval::pure));
+        return varInContext;
+    }
+
+    @Override
+    public Eval<Value> visitArguments(AlgebraicParser.ArgumentsContext ctx) {
+        return super.visitArguments(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitMulOp(AlgebraicParser.MulOpContext ctx) {
+        return super.visitMulOp(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitAddOp(AlgebraicParser.AddOpContext ctx) {
+        return super.visitAddOp(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitUnaryOp(AlgebraicParser.UnaryOpContext ctx) {
+        return super.visitUnaryOp(ctx);
+    }
+
+    @Override
+    public Eval<Value> visitPostfixOp(AlgebraicParser.PostfixOpContext ctx) {
+        return super.visitPostfixOp(ctx);
+    }
 }

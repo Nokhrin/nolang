@@ -11,4 +11,5 @@ public class EvalCombinators {
   public static Eval<Value> upcastToValue(Eval<? extends Value> eval) {
     return eval.map(value -> value);
   }
+
 }

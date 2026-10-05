@@ -35,17 +35,17 @@
 ### Приоритеты и ассоциативность
 
 1. Группирование:
-   - скобки `(...)`;
-   - абсолютные скобки `| ... |`
+    - скобки `(...)`;
+    - абсолютные скобки `| ... |`
 2. Постфиксный факториал `!`
 3. Возведение в степень `^`
-   - операция правоассоциативная
+    - операция правоассоциативная
 4. Унарные префиксные операторы `+`, `-`
-   - операции правоассоциативные
+    - операции правоассоциативные
 5. Умножение и деление ``, `/`
-   - операции левоассоциативные
+    - операции левоассоциативные
 6. Сложение и вычитание `+`, `-`
-   - операции левоассоциативные
+    - операции левоассоциативные
 
 ### Переменные
 
@@ -124,120 +124,7 @@
 языке. Тестирование сокращается до проверки базисных случаев и индуктивных шагов для каждого типа
 узла.
 
-### Типизация вычислений
-
-Операции разделены на классы по признакам количество операндов, тип операндов
-проблема
-вызов конкретного метода в контексте, для каждого вычисления - уникальная инструкция, многословно, надо знать реализацию вычисления
-решение - интерфейс для вычислений
-
-### Типизация результатов вычислений
-
-проблема - переход к конкретным типам Value
-обобщенные типы java инвариантны
-NumericValue является Value
-но
-Eval<NumericValue> не является Eval<Value>
-Result<NumericValue> не является Result<Value>
-
-решение - сужение/расширение типов
-
-Value.match - сужение по Optional
-В посетителе для вычисления Numeric определить приватные методы
-Вычисление операторов - в публичных методах с типом из BaseVisitor<T> - Eval<Value>
-
-```plantuml
-package "nolang.functional" {
-    interface "Eval<A>" {
-        +run(executionContext: Environment): Result<A>
-        {static} +pure(returned: A): Eval<A>
-        {static} +raiseError(error: EvalError): Eval<A>
-        {static} +raiseSignal(signal: ControlSignal): Eval<A>
-        +flatMap(function: Function<A, Eval<B>>): Eval<B>
-        +map(function: Function<A, B>): Eval<B>
-        +widen(): Eval<B>
-    }
-
-
-    interface "Result<A>" <<sealed>> {
-        +executionContext(): Environment
-    }
-
-    record "Result.Success<A>" {
-        +executionContext: Environment
-        +returned: A
-    }
-
-    record "Result.Failure<A>" {
-        +executionContext: Environment
-        +error: EvalError
-    }
-
-    record "Result.Control<A>" {
-        +executionContext: Environment
-        +signal: ControlSignal
-    }
-
-    class Environment
-    class EvalError
-}
-
-"Eval<A>" ..> "Result<A>" : run() returns
-
-package "nolang.common.values" {
-    interface Value {
-        +match(
-            onNumeric: "Function<NumericValue, T>",
-            onBool: "Function<BoolValue, T>",
-            onVoid: "Function<VoidValue, T>"
-        ): T
-    }
-
-    interface NumericValue {
-    }
-    Value <|.. NumericValue
-
-    record IntValue {
-        +number: long
-    }
-    NumericValue <|.. IntValue
-    note "NumericValue\n подтип\nValue" as InheritanceNote
-    InheritanceNote .. NumericValue
-    InheritanceNote .. Value
-
-    note "Eval<NumericValue>\nне подтип\nEval<Value>" as InvariantNote
-
-    InvariantNote .. "Eval<NumericValue>"
-    InvariantNote .. "Eval<Value>"
-}
-```
-
 ## Выполнение
-
-1. Клонирование репозитория
-
-   ```shell
-   git clone <URL_РЕПОЗИТОРИЯ>
-   cd nolang
-   ```
-2. Сборка проекта
-
-   ```shell
-   mvn clean package
-   ```
-3. Запуск
-   - Интерактивный режим (REPL):
-
-     ```shell
-     java -jar target/nolang-1.0-SNAPSHOT.jar
-     ```
-   - Выполнение из файла:
-
-     ```shell
-     java -jar target/nolang-1.0-SNAPSHOT.jar algebraic src/test/resources/algebraic/statements.txt
-     ```
-
-## Пример выполнения
 
 ### Сборка
 
@@ -257,7 +144,6 @@ java -jar target/nolang-1.0-SNAPSHOT.jar algebraic
 > print(1/0)
 Division by zero
 ```
-
 
 ### Выполнение из файла
 
@@ -280,26 +166,6 @@ print(5!)
 8
 120
 ```
-
-### Обработка ошибок
-
-Деление на ноль:
-
-```text
-> print(1/0)
-```
-
-Результат: `Result.Failure` с `EvalError.ArithmeticError("Division by zero")`. В текущей реализации
-CLI сообщение об ошибке не выводится в `outputBuffer`. Отображение ошибок в консоли — незавершенная
-задача.
-
-Использование неинициализированной переменной:
-
-```text
-> print(undefined_var)
-```
-
-Результат: `Result.Failure` с `ScopeError.Undefined`.
 
 ---
 

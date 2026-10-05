@@ -104,7 +104,7 @@ public class Folds {
       return Eval.raiseError(new EvalError.SyntaxError("Binary expression is empty"));
     }
 
-    Eval<NumericValue> accumulator = operands.getFirst().flatMap(NumericValues::narrow);
+    Eval<NumericValue> accumulator = operands.getFirst().flatMap(ValueCombinators::narrowToNumericValue);
 
     for (int i = 0; i < operatorSymbols.size(); i++) {
       Either<EvalError, BinaryNumericOperation> operationParsed =
@@ -113,7 +113,7 @@ public class Folds {
         return Eval.raiseError(operationParsed.leftOptional().orElseThrow());
       }
       BinaryNumericOperation operation = operationParsed.rightOptional().orElseThrow();
-      Eval<NumericValue> right = operands.get(i + 1).flatMap(NumericValues::narrow);
+      Eval<NumericValue> right = operands.get(i + 1).flatMap(ValueCombinators::narrowToNumericValue);
       accumulator = operation.apply(accumulator, right);
     }
     return EvalCombinators.upcastToValue(accumulator);
