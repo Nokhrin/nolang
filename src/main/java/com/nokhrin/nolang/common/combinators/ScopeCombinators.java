@@ -16,13 +16,13 @@ public class ScopeCombinators {
   public static Eval<Value> modifyScope(Function<Scope, Either<ScopeError, Scope>> operation) {
     return ContextCombinators.getContext()
         .flatMap(
-            environment -> {
-              Either<ScopeError, Scope> result = operation.apply(environment.scope());
+            executionContext -> {
+              Either<ScopeError, Scope> result = operation.apply(executionContext.scope());
               return result.fold(
-                  scopeError -> Eval.raiseError(scopeError),
+                  Eval::raiseError,
                   updatedScope ->
                       ContextCombinators.updateContext(
-                              envModified -> envModified.withScope(updatedScope))
+                              executionContext1 -> executionContext1.withScope(updatedScope))
                           .flatMap(_ -> Eval.pure(Value.VoidValue.INSTANCE)));
             });
   }

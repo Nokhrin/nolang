@@ -4,7 +4,9 @@ import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
 import com.nokhrin.nolang.common.combinators.ContextCombinators;
 import com.nokhrin.nolang.common.combinators.EvalCombinators;
+import com.nokhrin.nolang.common.combinators.ScopeCombinators;
 import com.nokhrin.nolang.common.core.Eval;
+import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
@@ -12,36 +14,72 @@ import com.nokhrin.nolang.common.values.Value;
 import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
+    /**
+     * returns last statement
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
     public Eval<Value> visitProgramWithStatements(AlgebraicParser.ProgramWithStatementsContext ctx) {
-        /*
-        пустая программа → Void
-один оператор → результат оператора
-несколько операторов → результат последнего
-прерывание → прерывание всей программы
-EOF игнорировать
-         */
-        return super.visitProgramWithStatements(ctx);
+        Eval<Value> lastEval = Eval.pure(Value.VoidValue.INSTANCE);
+
+        for (AlgebraicParser.StatementContext statementContext : ctx.statement()) {
+            lastEval = lastEval.flatMap(_ -> visit(statementContext));
+        }
+
+        return lastEval;
     }
 
+    /**
+     * makes no computations
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
     public Eval<Value> visitEmptyProgram(AlgebraicParser.EmptyProgramContext ctx) {
-        return super.visitEmptyProgram(ctx);
+        return Eval.pure(Value.VoidValue.INSTANCE);
     }
 
+    /**
+     * delegates to assignment
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
     public Eval<Value> visitStatement(AlgebraicParser.StatementContext ctx) {
-        return super.visitStatement(ctx);
+        return visit(ctx.assignment());
     }
 
+    /**
+     * assigns, updates scope
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
     public Eval<Value> visitAssignStatement(AlgebraicParser.AssignStatementContext ctx) {
-        return super.visitAssignStatement(ctx);
+        String varName = ctx.ID().getText();
+        Eval<Value> varValueEval = visit(ctx.term());
+
+        return  ScopeCombinators.assignVariable(varName, varValueEval);
     }
 
+    /**
+     * makes computation, no assign
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
     public Eval<Value> visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
-        return super.visitTermStatement(ctx);
+        Eval<Value> valueEval = visit(ctx.term());
+
+        valueEval = valueEval.flatMap(value ->
+            value.match(
+                Eval::pure,
+                boolValue -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got: " + boolValue)),
+                voidValue -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got: " + voidValue))
+            )
+        );
+        return valueEval;
     }
 
     @Override
