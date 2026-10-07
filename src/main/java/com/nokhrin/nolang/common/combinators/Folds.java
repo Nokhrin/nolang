@@ -91,33 +91,6 @@ public class Folds {
     return foldLeftNumeric(operands, operations);
   }
 
-  /**
-   * For Dynamic, type validation
-   *
-   * @param operands
-   * @param operatorSymbols
-   * @return
-   */
-  public static Eval<Value> foldLeftDynamic(
-      List<Eval<Value>> operands, List<String> operatorSymbols) {
-    if (operands.isEmpty()) {
-      return Eval.raiseError(new EvalError.SyntaxError("Binary expression is empty"));
-    }
-
-    Eval<NumericValue> accumulator = operands.getFirst().flatMap(ValueCombinators::narrowToNumericValue);
-
-    for (int i = 0; i < operatorSymbols.size(); i++) {
-      Either<EvalError, BinaryNumericOperation> operationParsed =
-          BinaryNumericOperation.fromSymbol(operatorSymbols.get(i));
-      if (operationParsed.isLeft()) {
-        return Eval.raiseError(operationParsed.leftOptional().orElseThrow());
-      }
-      BinaryNumericOperation operation = operationParsed.rightOptional().orElseThrow();
-      Eval<NumericValue> right = operands.get(i + 1).flatMap(ValueCombinators::narrowToNumericValue);
-      accumulator = operation.apply(accumulator, right);
-    }
-    return EvalCombinators.upcastToValue(accumulator);
-  }
 
   public static Eval<List<Value>> collectArguments(List<? extends Eval<? extends Value>> argsEval) {
     Eval<List<Value>> accumulator = Eval.pure(List.of());

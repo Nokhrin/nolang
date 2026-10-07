@@ -2,14 +2,16 @@ package com.nokhrin.nolang.algebraic;
 
 import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
-import com.nokhrin.nolang.common.combinators.ContextCombinators;
-import com.nokhrin.nolang.common.combinators.EvalCombinators;
-import com.nokhrin.nolang.common.combinators.ScopeCombinators;
+import com.nokhrin.nolang.common.combinators.*;
 import com.nokhrin.nolang.common.core.Eval;
 import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.core.ExecutionContext;
+import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
+import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
+
+import java.util.List;
 
 import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
@@ -60,7 +62,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
         String varName = ctx.ID().getText();
         Eval<Value> varValueEval = visit(ctx.term());
 
-        return  ScopeCombinators.assignVariable(varName, varValueEval);
+        return ScopeCombinators.assignVariable(varName, varValueEval);
     }
 
     /**
@@ -84,27 +86,66 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     @Override
     public Eval<Value> visitTerm(AlgebraicParser.TermContext ctx) {
-        return super.visitTerm(ctx);
+
+        List<AlgebraicParser.FactorContext> factors = ctx.factor();
+        List<AlgebraicParser.AddOpContext> addOps = ctx.addOp();
+
+        Eval<NumericValue> numericValueEval =
+            Folds.foldLeftAssociativeNumeric(factors, addOps,
+                node -> visit(node)
+                    .flatMap(ValueCombinators::narrowToNumericValue));
+
+        return EvalCombinators.upcastToValue(numericValueEval);
     }
 
     @Override
     public Eval<Value> visitFactor(AlgebraicParser.FactorContext ctx) {
-        return super.visitFactor(ctx);
+        List<AlgebraicParser.UnaryContext> unaries = ctx.unary();
+        List<AlgebraicParser.MulOpContext> mulOps = ctx.mulOp();
+
+        Eval<NumericValue> numericValueEval =
+            Folds.foldLeftAssociativeNumeric(unaries, mulOps,
+                node -> visit(node)
+                    .flatMap(ValueCombinators::narrowToNumericValue));
+
+        return EvalCombinators.upcastToValue(numericValueEval);
     }
 
     @Override
     public Eval<Value> visitUnaryExpression(AlgebraicParser.UnaryExpressionContext ctx) {
-        return super.visitUnaryExpression(ctx);
+        String unOp = ctx.unaryOp().getText();
+        Eval<Value> operand = visit(ctx.unary());
+
+        Eval<NumericValue> operandNumeric = operand.flatMap(ValueCombinators::narrowToNumericValue);
+        Eval<NumericValue> result = UnaryNumericOperation.applySymbol(unOp, operandNumeric);
+
+        return EvalCombinators.upcastToValue(result);
     }
 
     @Override
     public Eval<Value> visitPowerExpression(AlgebraicParser.PowerExpressionContext ctx) {
-        return super.visitPowerExpression(ctx);
+        Eval<Value> baseEval = visit(ctx.postfix());
+        Eval<Value> exponentEval = visit(ctx.unary());
+
+        Eval<NumericValue> baseNumeric = baseEval.flatMap(ValueCombinators::narrowToNumericValue);
+        Eval<NumericValue> exponentNumeric = exponentEval.flatMap(ValueCombinators::narrowToNumericValue);
+
+        Eval<NumericValue> result = BinaryNumericOperation.POW.apply(baseNumeric, exponentNumeric);
+
+        return EvalCombinators.upcastToValue(result);
     }
 
     @Override
     public Eval<Value> visitPostfixExpression(AlgebraicParser.PostfixExpressionContext ctx) {
-        return super.visitPostfixExpression(ctx);
+        Eval<Value> atomEval = visit(ctx.postfix().atom());
+        Eval<NumericValue> resultAccum = atomEval.flatMap(ValueCombinators::narrowToNumericValue);
+
+        for (AlgebraicParser.PostfixOpContext postOp : ctx.postfix().postfixOp()) {
+            String operation = postOp.getText();
+            resultAccum = UnaryNumericOperation.applySymbol(operation, resultAccum);
+        }
+
+        return EvalCombinators.upcastToValue(resultAccum);
     }
 
     @Override
