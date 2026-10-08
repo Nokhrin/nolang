@@ -50,12 +50,12 @@ public class BuiltInFunctions {
                               "pow expected numeric, got base: %s, got exponent: %s"
                                   .formatted(baseArg, exponentArg)));
                 };
-            case NumericValue.RealValue intBase ->
+            case NumericValue.RealValue realBase ->
                 switch (exponentArg) {
                   case NumericValue.IntValue intValueExp ->
-                      EvalCombinators.upcastToValue(Numeric.pow(intBase, intValueExp));
+                      EvalCombinators.upcastToValue(Numeric.pow(realBase, intValueExp));
                   case NumericValue.RealValue realValueExp ->
-                      EvalCombinators.upcastToValue(Numeric.pow(intBase, realValueExp));
+                      EvalCombinators.upcastToValue(Numeric.pow(realBase, realValueExp));
                   default ->
                       Eval.raiseError(
                           new EvalError.TypeError(

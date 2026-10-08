@@ -11,8 +11,10 @@ import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static com.nokhrin.nolang.common.combinators.ContextCombinators.callFunction;
 import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
@@ -137,10 +139,15 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     @Override
     public Eval<Value> visitPostfixExpression(AlgebraicParser.PostfixExpressionContext ctx) {
-        Eval<Value> atomEval = visit(ctx.postfix().atom());
+        return visit(ctx.postfix());
+    }
+
+    @Override
+    public Eval<Value> visitPostfix(AlgebraicParser.PostfixContext ctx) {
+        Eval<Value> atomEval = visit(ctx.atom());
         Eval<NumericValue> resultAccum = atomEval.flatMap(ValueCombinators::narrowToNumericValue);
 
-        for (AlgebraicParser.PostfixOpContext postOp : ctx.postfix().postfixOp()) {
+        for (AlgebraicParser.PostfixOpContext postOp : ctx.postfixOp()) {
             String operation = postOp.getText();
             resultAccum = UnaryNumericOperation.applySymbol(operation, resultAccum);
         }
@@ -149,18 +156,16 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     }
 
     @Override
-    public Eval<Value> visitPostfix(AlgebraicParser.PostfixContext ctx) {
-        return super.visitPostfix(ctx);
-    }
-
-    @Override
     public Eval<Value> visitAbsoluteAtom(AlgebraicParser.AbsoluteAtomContext ctx) {
-        return super.visitAbsoluteAtom(ctx);
+        Eval<Value> atomEval = visit(ctx.term());
+        Eval<NumericValue> atomNumeric = atomEval.flatMap(ValueCombinators::narrowToNumericValue);
+        Eval<NumericValue> evalResult = atomNumeric.flatMap(UnaryNumericOperation.ABSOLUTE::apply);
+        return EvalCombinators.upcastToValue(evalResult);
     }
 
     @Override
     public Eval<Value> visitParenthesesAtom(AlgebraicParser.ParenthesesAtomContext ctx) {
-        return super.visitParenthesesAtom(ctx);
+        return visit(ctx.term());
     }
 
     @Override
@@ -172,7 +177,20 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     @Override
     public Eval<Value> visitFuncCallAtom(AlgebraicParser.FuncCallAtomContext ctx) {
-        return super.visitFuncCallAtom(ctx);
+        String funcName = ctx.ID().getText();
+        Eval<List<Value>> funcArgsEval =collectFuncArgs(ctx.arguments());
+
+        return funcArgsEval.flatMap(funcArgs->
+            ContextCombinators.callFunction(funcName,funcArgs));
+    }
+
+    private Eval<List<Value>> collectFuncArgs(AlgebraicParser.ArgumentsContext ctx) {
+        //извлечь аргументы из AST: List<TermContext> -> List<Eval<Value>>
+        List<Eval<Value>> argEvals = new ArrayList<>();
+        for (AlgebraicParser.TermContext argCtx : ctx.term())
+            argEvals.add(visit(argCtx));
+        // List<Eval<Value>> -> Eval<List<Value>>
+        return Folds.collectArguments(argEvals);
     }
 
     @Override
@@ -184,30 +202,5 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
                 executionContext.scope().lookup(varName)
                     .fold(Eval::raiseError, Eval::pure));
         return varInContext;
-    }
-
-    @Override
-    public Eval<Value> visitArguments(AlgebraicParser.ArgumentsContext ctx) {
-        return super.visitArguments(ctx);
-    }
-
-    @Override
-    public Eval<Value> visitMulOp(AlgebraicParser.MulOpContext ctx) {
-        return super.visitMulOp(ctx);
-    }
-
-    @Override
-    public Eval<Value> visitAddOp(AlgebraicParser.AddOpContext ctx) {
-        return super.visitAddOp(ctx);
-    }
-
-    @Override
-    public Eval<Value> visitUnaryOp(AlgebraicParser.UnaryOpContext ctx) {
-        return super.visitUnaryOp(ctx);
-    }
-
-    @Override
-    public Eval<Value> visitPostfixOp(AlgebraicParser.PostfixOpContext ctx) {
-        return super.visitPostfixOp(ctx);
     }
 }

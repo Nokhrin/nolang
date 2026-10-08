@@ -19,7 +19,7 @@ public class ContextCombinators {
         new EvalResult.Returned<>(function.apply(executionContext), Unit.INSTANCE);
   }
 
-  public static Eval<Value> callFunction(String funcName, List<Value> args) {
-    return getContext().flatMap(env -> env.registry().evaluate(funcName, args));
+  public static Eval<Value> callFunction(String funcName, List<Value> funcArgs) {
+    return getContext().flatMap(executionContext -> executionContext.registry().evaluate(funcName, funcArgs));
   }
 }
