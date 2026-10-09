@@ -12,6 +12,6 @@ public class ValueCombinators {
             boolVal ->
                 Eval.raiseError(new EvalError.TypeError("Numeric expected, got boolean: " + boolVal)),
             voidVal ->
-                Eval.raiseError(new EvalError.TypeError("Numeric expected, got void: " + voidVal)));
+                Eval.raiseError(new EvalError.TypeError("Numeric expected, got: " + voidVal)));
     }
 }

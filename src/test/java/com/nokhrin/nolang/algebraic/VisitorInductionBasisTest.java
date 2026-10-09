@@ -108,7 +108,7 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
                 switch (interrupted.reason()) {
                     case InterruptReason.Error error ->
                         assertInstanceOf(ScopeError.UndefinedVariable.class, error.cause());
-                    case InterruptReason.Control signal -> fail("unexpected control signal: " + signal);
+                    case InterruptReason.Control signal -> fail("unexpected control cause: " + signal);
                 }
             }
             case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned.value());

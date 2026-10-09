@@ -109,8 +109,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(Either.right(valExpected), returned.executionContext().scope().lookup("x")),
                 () -> assertEquals(valExpected, returned.value())
             );
-            case EvalResult.Interrupted<Value> interrupted ->
-                fail("Unexpected interruption: " + interrupted.reason().message());
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted.reason().message());
         }
     }
 
@@ -149,11 +148,33 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         EvalResult<Value> result = interpreter.evaluate(src, context);
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
+                () -> assertTrue(actual.executionContext().scope().bindings().isEmpty()),
                 () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
-//                ()->assertInstanceOf(EvalError.TypeError.class, actual.reason().cause()),
-                () -> assertTrue(actual.executionContext().scope().bindings().isEmpty())
+
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> assertAll(
+                            () -> assertInstanceOf(EvalError.SyntaxError.class, actualError.cause()),
+                            () -> assertTrue(actualError.cause().message().contains("mismatched input 'AND'"))
+                        );
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+//                },
+//
+//
+//                () -> {
+//                    switch (actual.reason()) {
+//                        case InterruptReason.Error actualError -> {
+//                            assertInstanceOf(EvalError.TypeError.class, actualError.cause());
+//                            assertEquals("Numeric expected, got: void", actualError.cause().message());
+//                        }
+//
+//                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+//                    }
+                }
+
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -167,10 +188,16 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
                 () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
-//                ()->assertInstanceOf(EvalError.ArithmeticError.class, actual.reason().cause()),
-                () -> assertFalse(actual.executionContext().scope().isDefined("undefinedVar"))
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError ->
+                            assertInstanceOf(EvalError.ArithmeticError.class, actualError.cause());
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                },
+                () -> assertTrue(actual.executionContext().scope().bindings().isEmpty())
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -192,7 +219,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                     actual.executionContext().scope().lookup("x")
                 )
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -212,7 +239,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                     actual.executionContext().scope().lookup("x")
                 )
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -234,7 +261,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 ),
                 () -> assertEquals(Value.VoidValue.INSTANCE, actual.value())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
 
     }
@@ -249,10 +276,18 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
-//                ()->assertInstanceOf(EvalError.ArithmeticError.class, actual.reason().cause()),
-                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason())
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError ->
+                            assertInstanceOf(EvalError.ArithmeticError.class, actualError.cause());
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                },
+                () -> assertTrue(actual.executionContext().scope().bindings().isEmpty())
+
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
 
     }
@@ -267,11 +302,24 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
-//                ()->assertInstanceOf(ScopeError.UndefinedVariable.class, actual.reason().cause()),
-//                ()->assertEquals("undefined_var", actual.reason().cause().name()),
-                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason())
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> {
+                            assertInstanceOf(ScopeError.UndefinedVariable.class, actualError.cause());
+                            if (actualError.cause() instanceof ScopeError.UndefinedVariable undefinedVariable) {
+                                assertEquals("undefined_var", undefinedVariable.name());
+                            } else {
+                                throw new IllegalStateException("Unexpected ScopeError: " + actualError.cause());
+                            }
+                        }
+
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                }
+
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -284,11 +332,24 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         EvalResult<Value> result = interpreter.evaluate(src, context);
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
-//                ()->assertInstanceOf(ScopeError.UndefinedVariable.class, actual.reason().cause()),
-//                ()->assertEquals("undefined_var", actual.reason().cause().name()),
-                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason())
+                () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> {
+                            assertInstanceOf(ScopeError.UndefinedVariable.class, actualError.cause());
+                            if (actualError.cause() instanceof ScopeError.UndefinedVariable undefinedVariable) {
+                                assertEquals("undefinedVar", undefinedVariable.name());
+                            } else {
+                                throw new IllegalStateException("Unexpected ScopeError: " + actualError.cause());
+                            }
+                        }
+
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                }
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -307,7 +368,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.IntValue(8), actual.value()),
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -325,7 +386,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.IntValue(8), actual.executionContext().scope().lookup("x").rightOptional().orElseThrow()),
                 () -> assertEquals(1, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -343,12 +404,12 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.IntValue(3), actual.executionContext().scope().lookup("x").rightOptional().orElseThrow()),
                 () -> assertEquals(1, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
     @Test
-    void calculationInterruption_errorReturned_scopeWithFirstVarCreated() {
+    void calculationInterruption_scopeWithFirstVarCreated_errorReturned() {
         String src = """
             x=1
             x/0
@@ -358,18 +419,30 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
 
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
-                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
-//                ()->assertInstanceOf(EvalError.ArithmeticError.class, actual.reason().cause()),
-//                ()->assertInstanceOf("Division by zero", actual.reason().cause().message()),
+                () -> assertEquals(1, actual.executionContext().scope().bindings().size()),
                 () -> assertEquals(new NumericValue.IntValue(1), actual.executionContext().scope().lookup("x").rightOptional().orElseThrow()),
-                () -> assertEquals(1, actual.executionContext().scope().bindings().size())
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> {
+                            assertInstanceOf(EvalError.ArithmeticError.class, actualError.cause());
+                            if (actualError.cause() instanceof EvalError.ArithmeticError arithmeticError) {
+                                assertEquals("Division by zero", arithmeticError.message());
+                            } else {
+                                throw new IllegalStateException("Unexpected ScopeError: " + actualError.cause());
+                            }
+                        }
+
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                }
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
     @Test
-    void definitionInterrupted_errorReturned_scopeIsEmpty() {
+    void definitionInterrupted_scopeIsEmpty_errorReturned() {
         String src = """
             undefined_var
             x=1
@@ -378,12 +451,26 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
 
         switch (result) {
             case EvalResult.Interrupted<Value> actual -> assertAll(
+                () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
                 () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
-//                ()->assertInstanceOf(ScopeError.UndefinedVariable.class, actual.reason().cause()),
-//                ()->assertEquals("undefined_var", actual.reason().cause().name()),
-                () -> assertEquals(0, actual.executionContext().scope().bindings().size())
+                () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> {
+                            assertInstanceOf(ScopeError.UndefinedVariable.class, actualError.cause());
+                            if (actualError.cause() instanceof ScopeError.UndefinedVariable undefinedVariable) {
+                                assertEquals("undefined_var", undefinedVariable.name());
+                            } else {
+                                throw new IllegalStateException("Unexpected ScopeError: " + actualError.cause());
+                            }
+                        }
+
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                }
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -400,7 +487,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.IntValue(1), actual.value()),
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -416,7 +503,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.IntValue(1), actual.value()),
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -432,7 +519,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(new NumericValue.RealValue(0), actual.value()),
                 () -> assertEquals(0, actual.executionContext().scope().bindings().size())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
     }
 
@@ -448,7 +535,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
                 () -> assertFalse(actual.executionContext().scope().isDefined("undefinedVar"))
             );
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned);
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -479,7 +566,49 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
                 () -> assertEquals(expected, actual.value()),
                 () -> assertEquals(scopeInitial, actual.executionContext().scope())
             );
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption");
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
+        }
+    }
+
+
+    private static Stream<Arguments> malformedFunctionCall() {
+        return Stream.of(
+            Arguments.of("""
+                    print(1) + 2
+                    """,
+                EvalError.TypeError.class)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("malformedFunctionCall")
+    void returnTypeConflict_scopeNotModified_errorReturned(String src, Class<? extends EvalError> expected) {
+        Scope scopeInitial = new Scope();
+        FunctionRegistry registry = new FunctionRegistry(BuiltInFunctions.create());
+        List<String> stdout = List.of();
+        context = new ExecutionContext(scopeInitial, registry, stdout);
+        interpreter = AlgebraicInterpreter.create();
+
+        EvalResult<Value> result = interpreter.evaluate(src, context);
+
+        switch (result) {
+            case EvalResult.Interrupted<Value> actual -> assertAll(
+                () -> assertEquals(scopeInitial, actual.executionContext().scope()),
+                () -> assertEquals(0, actual.executionContext().scope().bindings().size()),
+                () -> assertInstanceOf(InterruptReason.Error.class, actual.reason()),
+                () -> {
+                    switch (actual.reason()) {
+                        case InterruptReason.Error actualError -> {
+                            assertInstanceOf(EvalError.TypeError.class, actualError.cause());
+                            assertEquals("Numeric expected, got: void", actualError.cause().message());
+                        }
+
+                        case InterruptReason.Control actualControl -> fail("Unexpected: " + actualControl);
+                    }
+                }
+
+            );
+            case EvalResult.Returned<Value> returned -> fail("Unexpected: " + returned);
         }
     }
 
@@ -612,7 +741,7 @@ public class VisitorInductionStepsTest extends AlgebraicIntegrationTestBase {
         EvalResult<Value> result = interpreter.evaluate(src, context);
         switch (result) {
             case EvalResult.Returned<Value> actual -> assertEquals(expected, actual.value());
-            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected interruption: " + interrupted);
+            case EvalResult.Interrupted<Value> interrupted -> fail("Unexpected: " + interrupted);
         }
 
     }

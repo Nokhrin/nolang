@@ -4,7 +4,6 @@ import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
 import com.nokhrin.nolang.common.combinators.*;
 import com.nokhrin.nolang.common.core.Eval;
-import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
@@ -14,7 +13,6 @@ import com.nokhrin.nolang.common.values.Value;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nokhrin.nolang.common.combinators.ContextCombinators.callFunction;
 import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
@@ -74,16 +72,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
      */
     @Override
     public Eval<Value> visitTermStatement(AlgebraicParser.TermStatementContext ctx) {
-        Eval<Value> valueEval = visit(ctx.term());
-
-        valueEval = valueEval.flatMap(value ->
-            value.match(
-                Eval::pure,
-                boolValue -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got: " + boolValue)),
-                voidValue -> Eval.raiseError(new EvalError.TypeError("Numeric expected, got: " + voidValue))
-            )
-        );
-        return valueEval;
+        return visit(ctx.term());
     }
 
     @Override
@@ -92,12 +81,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
         List<AlgebraicParser.FactorContext> factors = ctx.factor();
         List<AlgebraicParser.AddOpContext> addOps = ctx.addOp();
 
-        Eval<NumericValue> numericValueEval =
-            Folds.foldLeftAssociativeNumeric(factors, addOps,
-                node -> visit(node)
-                    .flatMap(ValueCombinators::narrowToNumericValue));
-
-        return EvalCombinators.upcastToValue(numericValueEval);
+        return Folds.foldLeftAssociativeNumeric(factors, addOps, this::visit);
     }
 
     @Override
@@ -105,12 +89,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
         List<AlgebraicParser.UnaryContext> unaries = ctx.unary();
         List<AlgebraicParser.MulOpContext> mulOps = ctx.mulOp();
 
-        Eval<NumericValue> numericValueEval =
-            Folds.foldLeftAssociativeNumeric(unaries, mulOps,
-                node -> visit(node)
-                    .flatMap(ValueCombinators::narrowToNumericValue));
-
-        return EvalCombinators.upcastToValue(numericValueEval);
+        return Folds.foldLeftAssociativeNumeric(unaries, mulOps, this::visit);
     }
 
     @Override
@@ -178,10 +157,10 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     @Override
     public Eval<Value> visitFuncCallAtom(AlgebraicParser.FuncCallAtomContext ctx) {
         String funcName = ctx.ID().getText();
-        Eval<List<Value>> funcArgsEval =collectFuncArgs(ctx.arguments());
+        Eval<List<Value>> funcArgsEval = collectFuncArgs(ctx.arguments());
 
-        return funcArgsEval.flatMap(funcArgs->
-            ContextCombinators.callFunction(funcName,funcArgs));
+        return funcArgsEval.flatMap(funcArgs ->
+            ContextCombinators.callFunction(funcName, funcArgs));
     }
 
     private Eval<List<Value>> collectFuncArgs(AlgebraicParser.ArgumentsContext ctx) {

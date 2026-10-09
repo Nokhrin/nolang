@@ -10,10 +10,10 @@ public sealed interface InterruptReason permits InterruptReason.Error, Interrupt
         }
     }
 
-    record Control(EvalControl signal) implements InterruptReason {
+    record Control(EvalControl cause) implements InterruptReason {
         @Override
         public String message() {
-            return signal.message();
+            return cause.message();
         }
     }
 }
