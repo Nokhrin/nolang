@@ -10,16 +10,19 @@ import java.util.function.Function;
 
 public class ContextCombinators {
 
-  public static Eval<ExecutionContext> getContext() {
-    return executionContext -> new EvalResult.Returned<>(executionContext, executionContext);
-  }
+    public static Eval<ExecutionContext> getContext() {
+        return executionContext -> new EvalResult.Returned<>(executionContext, executionContext);
+    }
 
-  public static Eval<Unit> updateContext(Function<ExecutionContext, ExecutionContext> function) {
-    return executionContext ->
-        new EvalResult.Returned<>(function.apply(executionContext), Unit.INSTANCE);
-  }
+    public static Eval<Unit> updateContext(Function<ExecutionContext, ExecutionContext> function) {
+        return executionContext ->
+                new EvalResult.Returned<>(function.apply(executionContext), Unit.INSTANCE);
+    }
 
-  public static Eval<Value> callFunction(String funcName, List<Value> funcArgs) {
-    return getContext().flatMap(executionContext -> executionContext.registry().evaluate(funcName, funcArgs));
-  }
+    public static Eval<Value> callFunction(String funcName, List<Value> funcArgs) {
+        return getContext()
+                .flatMap(
+                        executionContext ->
+                                executionContext.registry().evaluate(funcName, funcArgs));
+    }
 }

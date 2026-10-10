@@ -1,5 +1,7 @@
 package com.nokhrin.nolang.algebraic;
 
+import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
+
 import com.nokhrin.nolang.AlgebraicBaseVisitor;
 import com.nokhrin.nolang.AlgebraicParser;
 import com.nokhrin.nolang.common.combinators.*;
@@ -9,20 +11,19 @@ import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.operations.UnaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.nokhrin.nolang.common.combinators.ValueParser.parseNumber;
 
 public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     /**
      * returns last statement
+     *
      * @param ctx the parse tree
      * @return
      */
     @Override
-    public Eval<Value> visitProgramWithStatements(AlgebraicParser.ProgramWithStatementsContext ctx) {
+    public Eval<Value> visitProgramWithStatements(
+            AlgebraicParser.ProgramWithStatementsContext ctx) {
         Eval<Value> lastEval = Eval.pure(Value.VoidValue.INSTANCE);
 
         for (AlgebraicParser.StatementContext statementContext : ctx.statement()) {
@@ -34,6 +35,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     /**
      * makes no computations
+     *
      * @param ctx the parse tree
      * @return
      */
@@ -44,6 +46,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     /**
      * delegates to assignment
+     *
      * @param ctx the parse tree
      * @return
      */
@@ -54,6 +57,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     /**
      * assigns, updates scope
+     *
      * @param ctx the parse tree
      * @return
      */
@@ -67,6 +71,7 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
 
     /**
      * makes computation, no assign
+     *
      * @param ctx the parse tree
      * @return
      */
@@ -109,7 +114,8 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
         Eval<Value> exponentEval = visit(ctx.unary());
 
         Eval<NumericValue> baseNumeric = baseEval.flatMap(ValueCombinators::narrowToNumericValue);
-        Eval<NumericValue> exponentNumeric = exponentEval.flatMap(ValueCombinators::narrowToNumericValue);
+        Eval<NumericValue> exponentNumeric =
+                exponentEval.flatMap(ValueCombinators::narrowToNumericValue);
 
         Eval<NumericValue> result = BinaryNumericOperation.POW.apply(baseNumeric, exponentNumeric);
 
@@ -124,6 +130,9 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     @Override
     public Eval<Value> visitPostfix(AlgebraicParser.PostfixContext ctx) {
         Eval<Value> atomEval = visit(ctx.atom());
+        if (ctx.postfixOp().isEmpty()) {
+            return atomEval;
+        }
         Eval<NumericValue> resultAccum = atomEval.flatMap(ValueCombinators::narrowToNumericValue);
 
         for (AlgebraicParser.PostfixOpContext postOp : ctx.postfixOp()) {
@@ -159,15 +168,14 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
         String funcName = ctx.ID().getText();
         Eval<List<Value>> funcArgsEval = collectFuncArgs(ctx.arguments());
 
-        return funcArgsEval.flatMap(funcArgs ->
-            ContextCombinators.callFunction(funcName, funcArgs));
+        return funcArgsEval.flatMap(
+                funcArgs -> ContextCombinators.callFunction(funcName, funcArgs));
     }
 
     private Eval<List<Value>> collectFuncArgs(AlgebraicParser.ArgumentsContext ctx) {
-        //извлечь аргументы из AST: List<TermContext> -> List<Eval<Value>>
+        // извлечь аргументы из AST: List<TermContext> -> List<Eval<Value>>
         List<Eval<Value>> argEvals = new ArrayList<>();
-        for (AlgebraicParser.TermContext argCtx : ctx.term())
-            argEvals.add(visit(argCtx));
+        for (AlgebraicParser.TermContext argCtx : ctx.term()) argEvals.add(visit(argCtx));
         // List<Eval<Value>> -> Eval<List<Value>>
         return Folds.collectArguments(argEvals);
     }
@@ -176,10 +184,13 @@ public class AlgebraicEvalVisitor extends AlgebraicBaseVisitor<Eval<Value>> {
     public Eval<Value> visitVariableAtom(AlgebraicParser.VariableAtomContext ctx) {
         String varName = ctx.ID().getText();
         Eval<ExecutionContext> executionContextEval = ContextCombinators.getContext();
-        Eval<Value> varInContext = executionContextEval
-            .flatMap(executionContext ->
-                executionContext.scope().lookup(varName)
-                    .fold(Eval::raiseError, Eval::pure));
+        Eval<Value> varInContext =
+                executionContextEval.flatMap(
+                        executionContext ->
+                                executionContext
+                                        .scope()
+                                        .lookup(varName)
+                                        .fold(Eval::raiseError, Eval::pure));
         return varInContext;
     }
 }

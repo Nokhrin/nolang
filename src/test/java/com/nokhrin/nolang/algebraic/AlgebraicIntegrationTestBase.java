@@ -4,9 +4,8 @@ import com.nokhrin.nolang.common.combinators.BuiltInFunctions;
 import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.core.FunctionRegistry;
 import com.nokhrin.nolang.common.core.Scope;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AlgebraicIntegrationTestBase {
     ExecutionContext context;
@@ -20,5 +19,4 @@ public abstract class AlgebraicIntegrationTestBase {
         context = new ExecutionContext(scope, registry, stdout);
         interpreter = AlgebraicInterpreter.create();
     }
-
 }

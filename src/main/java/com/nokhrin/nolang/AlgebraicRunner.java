@@ -7,7 +7,6 @@ import com.nokhrin.nolang.common.core.ExecutionContext;
 import com.nokhrin.nolang.common.core.FunctionRegistry;
 import com.nokhrin.nolang.common.core.Scope;
 import com.nokhrin.nolang.common.values.Value;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -19,7 +18,7 @@ import java.util.Scanner;
 /** Точка входа для REPL алгебраического калькулятора. */
 public class AlgebraicRunner {
     private static ExecutionContext handleResult(
-        EvalResult<Value> result, PrintStream stdout, PrintStream error) {
+            EvalResult<Value> result, PrintStream stdout, PrintStream error) {
         result.executionContext().stdout().forEach(stdout::println);
 
         return switch (result) {
@@ -53,11 +52,11 @@ public class AlgebraicRunner {
     }
 
     private static void executeFile(
-        AlgebraicInterpreter interpreter,
-        String filePath,
-        FunctionRegistry functionRegistry,
-        PrintStream stdout,
-        PrintStream stderr) {
+            AlgebraicInterpreter interpreter,
+            String filePath,
+            FunctionRegistry functionRegistry,
+            PrintStream stdout,
+            PrintStream stderr) {
         Path path = Path.of(filePath);
         if (!Files.exists(path)) {
             stdout.flush();
@@ -67,7 +66,7 @@ public class AlgebraicRunner {
         }
 
         ExecutionContext executionContext =
-            new ExecutionContext(new Scope(), functionRegistry, List.of());
+                new ExecutionContext(new Scope(), functionRegistry, List.of());
 
         try {
             String fileContent = Files.readString(path);
@@ -82,17 +81,17 @@ public class AlgebraicRunner {
     }
 
     private static void runInteractive(
-        AlgebraicInterpreter interpreter,
-        FunctionRegistry functionRegistry,
-        InputStream stdin,
-        PrintStream stdout,
-        PrintStream stderr) {
+            AlgebraicInterpreter interpreter,
+            FunctionRegistry functionRegistry,
+            InputStream stdin,
+            PrintStream stdout,
+            PrintStream stderr) {
         Scanner scanner = new Scanner(stdin);
         stdout.println("Algebraic Interpreter\n'/h' for usage info, '/q' to quit");
         stdout.flush();
 
         ExecutionContext executionContext =
-            new ExecutionContext(new Scope(), functionRegistry, List.of());
+                new ExecutionContext(new Scope(), functionRegistry, List.of());
 
         label:
         while (true) {

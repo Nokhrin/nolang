@@ -1,36 +1,32 @@
 package com.nokhrin.nolang.algebraic;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nokhrin.nolang.AlgebraicParser;
 import com.nokhrin.nolang.common.combinators.BuiltInFunctions;
 import com.nokhrin.nolang.common.core.*;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
 
-
     /**
-     * ProgramContext - cast to ProgramWithStatementsContext
-     * -> ProgramWithStatementsContext(0) - call StatementContext
-     *  -> StatementContext - call AssignmentContext
-     *   -> AssignmentContext - cast to Term
-     *    -> TermContext(0) - call
-     *     -> FactorContext(0) - cast to PostfixExpression
-     *      -> PostfixExpressionContext(0) - cast to VarAtom
-     *       -> VariableAtomContext
+     * ProgramContext - cast to ProgramWithStatementsContext -> ProgramWithStatementsContext(0) -
+     * call StatementContext -> StatementContext - call AssignmentContext -> AssignmentContext -
+     * cast to Term -> TermContext(0) - call -> FactorContext(0) - cast to PostfixExpression ->
+     * PostfixExpressionContext(0) - cast to VarAtom -> VariableAtomContext
+     *
      * @return
      */
     private AlgebraicParser.VariableAtomContext extractVarCtx(String src) {
-        Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parsed = AlgebraicSyntaxAnalyzer.parse(src);
+        Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parsed =
+                AlgebraicSyntaxAnalyzer.parse(src);
         if (parsed.isLeft()) {
             throw new AssertionError("Parsing failed: " + parsed.leftOptional().orElseThrow());
         }
@@ -45,9 +41,7 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
                 var postfix = factor.unary(0);
                 if (postfix instanceof AlgebraicParser.PostfixExpressionContext pec) {
                     var atom = pec.postfix().atom();
-                    if (atom instanceof AlgebraicParser.VariableAtomContext vac)
-                        return vac;
-
+                    if (atom instanceof AlgebraicParser.VariableAtomContext vac) return vac;
                 }
             }
         }
@@ -59,13 +53,15 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
         String varName = "x";
         NumericValue.IntValue varValue = new NumericValue.IntValue(42);
 
-        Scope scope = new Scope()
-            .define(varName, varValue)
-            .rightOptional()
-            .orElseThrow(() -> new AssertionError("Failed to init scope"));
+        Scope scope =
+                new Scope()
+                        .define(varName, varValue)
+                        .rightOptional()
+                        .orElseThrow(() -> new AssertionError("Failed to init scope"));
 
         FunctionRegistry functionRegistry = new FunctionRegistry(BuiltInFunctions.create());
-        ExecutionContext executionContext = new ExecutionContext(scope, functionRegistry, List.of());
+        ExecutionContext executionContext =
+                new ExecutionContext(scope, functionRegistry, List.of());
 
         AlgebraicParser.VariableAtomContext varAtomCtx = extractVarCtx(varName);
 
@@ -76,12 +72,10 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
 
         switch (evalResult) {
             case EvalResult.Returned<Value> returned -> {
-                assertAll(
-                    () -> assertEquals(varValue, returned.value())
-                );
+                assertAll(() -> assertEquals(varValue, returned.value()));
             }
             case EvalResult.Interrupted<Value> interrupted ->
-                fail("Unexpected interruption: " + interrupted.reason().message());
+                    fail("Unexpected interruption: " + interrupted.reason().message());
         }
     }
 
@@ -92,7 +86,8 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
         Scope scope = new Scope();
 
         FunctionRegistry functionRegistry = new FunctionRegistry(BuiltInFunctions.create());
-        ExecutionContext executionContext = new ExecutionContext(scope, functionRegistry, List.of());
+        ExecutionContext executionContext =
+                new ExecutionContext(scope, functionRegistry, List.of());
 
         AlgebraicParser.VariableAtomContext varAtomCtx = extractVarCtx(varName);
 
@@ -107,24 +102,24 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
                 assertInstanceOf(InterruptReason.Error.class, interrupted.reason());
                 switch (interrupted.reason()) {
                     case InterruptReason.Error error ->
-                        assertInstanceOf(ScopeError.UndefinedVariable.class, error.cause());
-                    case InterruptReason.Control signal -> fail("unexpected control cause: " + signal);
+                            assertInstanceOf(ScopeError.UndefinedVariable.class, error.cause());
+                    case InterruptReason.Control signal ->
+                            fail("unexpected control cause: " + signal);
                 }
             }
-            case EvalResult.Returned<Value> returned -> fail("Unexpected return: " + returned.value());
+            case EvalResult.Returned<Value> returned ->
+                    fail("Unexpected return: " + returned.value());
         }
-
     }
 
     static Stream<Arguments> validNumberAtoms() {
         return Stream.of(
-            Arguments.of("0", new NumericValue.IntValue(0)),
-            Arguments.of("1", new NumericValue.IntValue(1)),
-            Arguments.of("123", new NumericValue.IntValue(123)),
-            Arguments.of(".5", new NumericValue.RealValue(0.5)),
-            Arguments.of("5.", new NumericValue.RealValue(5.0)),
-            Arguments.of("1.25", new NumericValue.RealValue(1.25))
-        );
+                Arguments.of("0", new NumericValue.IntValue(0)),
+                Arguments.of("1", new NumericValue.IntValue(1)),
+                Arguments.of("123", new NumericValue.IntValue(123)),
+                Arguments.of(".5", new NumericValue.RealValue(0.5)),
+                Arguments.of("5.", new NumericValue.RealValue(5.0)),
+                Arguments.of("1.25", new NumericValue.RealValue(1.25)));
     }
 
     @ParameterizedTest
@@ -134,13 +129,13 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
         switch (actual) {
             case EvalResult.Returned<Value> returned -> assertEquals(expected, returned.value());
             case EvalResult.Interrupted<Value> interrupted ->
-                fail("Interrupted, reason: " + interrupted.reason().message());
+                    fail("Interrupted, reason: " + interrupted.reason().message());
         }
     }
 
-
     private AlgebraicParser.NumberAtomContext extractNumberCtx(String src) {
-        Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parsedNumber = AlgebraicSyntaxAnalyzer.parse(src);
+        Either<List<EvalError.SyntaxError>, AlgebraicParser.ProgramContext> parsedNumber =
+                AlgebraicSyntaxAnalyzer.parse(src);
 
         if (parsedNumber.isLeft()) {
 
@@ -164,11 +159,8 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
                     }
                 }
             }
-
         }
         throw new AssertionError("NumberContext not found");
-
-
     }
 
     @Test
@@ -176,27 +168,26 @@ public class VisitorInductionBasisTest extends AlgebraicIntegrationTestBase {
         // Получить NumberAtomContext
         AlgebraicParser.NumberAtomContext numberAtomContext = extractNumberCtx("0");
 
-        //Создать пустой ExecutionContext
+        // Создать пустой ExecutionContext
         Scope scope = new Scope();
         FunctionRegistry registry = new FunctionRegistry(BuiltInFunctions.create());
         ExecutionContext context = new ExecutionContext(scope, registry, List.of());
 
-        //Вызвать visitNumberAtom
+        // Вызвать visitNumberAtom
         AlgebraicEvalVisitor visitor = new AlgebraicEvalVisitor();
         Eval<Value> number = visitor.visitNumberAtom(numberAtomContext);
 
-        //Выполнить вычисление
+        // Выполнить вычисление
         EvalResult<Value> result = number.run(context);
 
-        //Проверить результат
+        // Проверить результат
         switch (result) {
             case EvalResult.Returned<Value> returned -> {
                 assertEquals(new NumericValue.IntValue(0), returned.value());
                 assertEquals("0", numberAtomContext.NUM().getText());
             }
             case EvalResult.Interrupted<Value> interrupted ->
-                fail("Unexpected interruption: " + interrupted.reason().message());
+                    fail("Unexpected interruption: " + interrupted.reason().message());
         }
-
     }
 }

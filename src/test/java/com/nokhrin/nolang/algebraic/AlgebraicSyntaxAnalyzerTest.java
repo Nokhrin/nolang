@@ -12,27 +12,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class AlgebraicSyntaxAnalyzerTest {
-  @ParameterizedTest
-  @ValueSource(strings = {"src/test/resources/algebraic/statements_valid.txt"})
-  void parse_validStatementsFromFile_returnsRight(String filePath) throws IOException {
-    String content = Files.readString(Path.of(filePath));
-    for (String line : content.split("\r?\n")) {
-      if (!line.trim().isEmpty()) {
-        Either<List<EvalError.SyntaxError>, ?> result = AlgebraicSyntaxAnalyzer.parse(line);
-        assertTrue(result.isRight());
-      }
+    @ParameterizedTest
+    @ValueSource(strings = {"src/test/resources/algebraic/statements_valid.txt"})
+    void parse_validStatementsFromFile_returnsRight(String filePath) throws IOException {
+        String content = Files.readString(Path.of(filePath));
+        for (String line : content.split("\r?\n")) {
+            if (!line.trim().isEmpty()) {
+                Either<List<EvalError.SyntaxError>, ?> result = AlgebraicSyntaxAnalyzer.parse(line);
+                assertTrue(result.isRight());
+            }
+        }
     }
-  }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"src/test/resources/algebraic/statements_invalid.txt"})
-  void parse_invalidStatementsFromFile_returnsLeft(String filePath) throws IOException {
-    String content = Files.readString(Path.of(filePath));
-    for (String line : content.split("\r?\n")) {
-      if (!line.trim().isEmpty()) {
-        Either<List<EvalError.SyntaxError>, ?> result = AlgebraicSyntaxAnalyzer.parse(line);
-        assertTrue(result.isLeft());
-      }
+    @ParameterizedTest
+    @ValueSource(strings = {"src/test/resources/algebraic/statements_invalid.txt"})
+    void parse_invalidStatementsFromFile_returnsLeft(String filePath) throws IOException {
+        String content = Files.readString(Path.of(filePath));
+        for (String line : content.split("\r?\n")) {
+            if (!line.trim().isEmpty()) {
+                Either<List<EvalError.SyntaxError>, ?> result = AlgebraicSyntaxAnalyzer.parse(line);
+                assertTrue(result.isLeft());
+            }
+        }
     }
-  }
 }

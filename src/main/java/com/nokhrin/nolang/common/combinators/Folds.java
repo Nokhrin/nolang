@@ -6,13 +6,12 @@ import com.nokhrin.nolang.common.core.EvalError;
 import com.nokhrin.nolang.common.operations.BinaryNumericOperation;
 import com.nokhrin.nolang.common.values.NumericValue;
 import com.nokhrin.nolang.common.values.Value;
-import org.antlr.v4.runtime.ParserRuleContext;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public class Folds {
     private Folds() {
@@ -20,7 +19,7 @@ public class Folds {
     }
 
     public static NumericValue left(
-        List<NumericValue> values, List<? extends BinaryOperator<NumericValue>> operations) {
+            List<NumericValue> values, List<? extends BinaryOperator<NumericValue>> operations) {
         NumericValue accumResult = values.getFirst();
         for (int i = 0; i < operations.size(); i++) {
             accumResult = operations.get(i).apply(accumResult, values.get(i + 1));
@@ -29,7 +28,7 @@ public class Folds {
     }
 
     public static NumericValue right(
-        List<NumericValue> values, List<? extends BinaryOperator<NumericValue>> operations) {
+            List<NumericValue> values, List<? extends BinaryOperator<NumericValue>> operations) {
         NumericValue accumResult = values.getLast();
         for (int i = operations.size() - 1; i >= 0; i--) {
             accumResult = operations.get(i).apply(values.get(i), accumResult);
@@ -38,7 +37,7 @@ public class Folds {
     }
 
     public static NumericValue right(
-        NumericValue operand, List<? extends UnaryOperator<NumericValue>> operations) {
+            NumericValue operand, List<? extends UnaryOperator<NumericValue>> operations) {
         NumericValue accumResult = operand;
         for (int i = operations.size() - 1; i >= 0; i--) {
             accumResult = operations.get(i).apply(accumResult);
@@ -54,13 +53,13 @@ public class Folds {
      * @return
      */
     public static Eval<NumericValue> foldLeftNumeric(
-        List<Eval<NumericValue>> operands, List<BinaryNumericOperation> operations) {
+            List<Eval<NumericValue>> operands, List<BinaryNumericOperation> operations) {
         if (operands.isEmpty()) {
             return Eval.raiseError(new EvalError.SyntaxError("Binary expression without operands"));
         }
         if (operands.size() != operations.size() + 1) {
             return Eval.raiseError(
-                new EvalError.SyntaxError("Count of operands and operations is invalid"));
+                    new EvalError.SyntaxError("Count of operands and operations is invalid"));
         }
 
         Eval<NumericValue> accumulator = operands.getFirst();
@@ -74,10 +73,9 @@ public class Folds {
     }
 
     public static Eval<Value> foldLeftAssociativeNumeric(
-        List<? extends ParserRuleContext> operandCtx,
-        List<? extends ParserRuleContext> operationCtx,
-        Function<? super ParserRuleContext, Eval<Value>> evalFunction
-    ) {
+            List<? extends ParserRuleContext> operandCtx,
+            List<? extends ParserRuleContext> operationCtx,
+            Function<? super ParserRuleContext, Eval<Value>> evalFunction) {
         if (operandCtx.isEmpty()) {
             return Eval.raiseError(new EvalError.SyntaxError("Expression is empty"));
         }
@@ -85,7 +83,8 @@ public class Folds {
         List<BinaryNumericOperation> operations = new ArrayList<>();
 
         for (ParserRuleContext operation : operationCtx) {
-            Either<EvalError, BinaryNumericOperation> parsed = BinaryNumericOperation.fromSymbol(operation.getText());
+            Either<EvalError, BinaryNumericOperation> parsed =
+                    BinaryNumericOperation.fromSymbol(operation.getText());
             if (parsed.isLeft()) {
                 return Eval.raiseError(parsed.leftOptional().orElseThrow());
             }
@@ -93,33 +92,36 @@ public class Folds {
         }
 
         if (operations.isEmpty()) {
-            return operands.getFirst(); //single operand in expression
+            return operands.getFirst(); // single operand in expression
         }
 
-        Eval<NumericValue> accumulator = operands.getFirst().flatMap(ValueCombinators::narrowToNumericValue);
+        Eval<NumericValue> accumulator =
+                operands.getFirst().flatMap(ValueCombinators::narrowToNumericValue);
         for (int i = 0; i < operations.size(); i++) {
             BinaryNumericOperation operation = operations.get(i);
             Eval<Value> operandValue = operands.get(i + 1);
-            Eval<NumericValue> operand = operandValue.flatMap(ValueCombinators::narrowToNumericValue);
+            Eval<NumericValue> operand =
+                    operandValue.flatMap(ValueCombinators::narrowToNumericValue);
             accumulator = operation.apply(accumulator, operand);
         }
         return EvalCombinators.upcastToValue(accumulator);
     }
 
-
-    public static Eval<List<Value>> collectArguments(List<? extends Eval<? extends Value>> argsEval) {
+    public static Eval<List<Value>> collectArguments(
+            List<? extends Eval<? extends Value>> argsEval) {
         Eval<List<Value>> accumulator = Eval.pure(List.of());
         for (Eval<? extends Value> arg : argsEval) {
             accumulator =
-                accumulator.flatMap(
-                    argsInitial ->
-                        arg.map(
-                            value -> {
-                                List<Value> updatedArgs = new ArrayList<>(argsInitial.size() + 1);
-                                updatedArgs.addAll(argsInitial);
-                                updatedArgs.add(value);
-                                return List.copyOf(updatedArgs);
-                            }));
+                    accumulator.flatMap(
+                            argsInitial ->
+                                    arg.map(
+                                            value -> {
+                                                List<Value> updatedArgs =
+                                                        new ArrayList<>(argsInitial.size() + 1);
+                                                updatedArgs.addAll(argsInitial);
+                                                updatedArgs.add(value);
+                                                return List.copyOf(updatedArgs);
+                                            }));
         }
         return accumulator;
     }

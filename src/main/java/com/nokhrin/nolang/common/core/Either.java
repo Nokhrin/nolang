@@ -6,70 +6,70 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public sealed interface Either<L, R> permits Either.Left, Either.Right {
-  record Left<L, R>(L value) implements Either<L, R> {
-    public Left {
-      Objects.requireNonNull(value, "Left value cannot be null");
+    record Left<L, R>(L value) implements Either<L, R> {
+        public Left {
+            Objects.requireNonNull(value, "Left value cannot be null");
+        }
+
+        @Override
+        public <T> T fold(
+                Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight) {
+            return onLeft.apply(value);
+        }
     }
 
-    @Override
-    public <T> T fold(
-        Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight) {
-      return onLeft.apply(value);
+    record Right<L, R>(R value) implements Either<L, R> {
+
+        public Right {
+            Objects.requireNonNull(value, "Right value cannot be null");
+        }
+
+        @Override
+        public <T> T fold(
+                Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight) {
+            return onRight.apply(value);
+        }
     }
-  }
 
-  record Right<L, R>(R value) implements Either<L, R> {
-
-    public Right {
-      Objects.requireNonNull(value, "Right value cannot be null");
+    static <L, R> Either<L, R> left(L value) {
+        return new Left<>(value);
     }
 
-    @Override
-    public <T> T fold(
-        Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight) {
-      return onRight.apply(value);
+    static <L, R> Either<L, R> right(R value) {
+        return new Right<>(value);
     }
-  }
 
-  static <L, R> Either<L, R> left(L value) {
-    return new Left<>(value);
-  }
+    <T> T fold(Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight);
 
-  static <L, R> Either<L, R> right(R value) {
-    return new Right<>(value);
-  }
+    default boolean isLeft() {
+        return this instanceof Left<?, ?>;
+    }
 
-  <T> T fold(Function<? super L, ? extends T> onLeft, Function<? super R, ? extends T> onRight);
+    default boolean isRight() {
+        return this instanceof Right<?, ?>;
+    }
 
-  default boolean isLeft() {
-    return this instanceof Left<?, ?>;
-  }
+    default <T> Either<L, T> map(Function<? super R, ? extends T> onRight) {
+        return flatMap(value -> right(onRight.apply(value)));
+    }
 
-  default boolean isRight() {
-    return this instanceof Right<?, ?>;
-  }
+    default <T> Either<L, T> flatMap(Function<? super R, Either<L, T>> onRight) {
+        return fold(Either::left, onRight);
+    }
 
-  default <T> Either<L, T> map(Function<? super R, ? extends T> onRight) {
-    return flatMap(value -> right(onRight.apply(value)));
-  }
+    default Either<L, R> orElse(Either<L, R> other) {
+        return fold(leftValue -> other, rightValue -> this);
+    }
 
-  default <T> Either<L, T> flatMap(Function<? super R, Either<L, T>> onRight) {
-    return fold(Either::left, onRight);
-  }
+    default Either<L, R> orElseGet(Supplier<? extends Either<L, R>> supplier) {
+        return fold(leftValue -> supplier.get(), rightValue -> this);
+    }
 
-  default Either<L, R> orElse(Either<L, R> other) {
-    return fold(leftValue -> other, rightValue -> this);
-  }
+    default Optional<L> leftOptional() {
+        return fold(Optional::of, rightValue -> Optional.empty());
+    }
 
-  default Either<L, R> orElseGet(Supplier<? extends Either<L, R>> supplier) {
-    return fold(leftValue -> supplier.get(), rightValue -> this);
-  }
-
-  default Optional<L> leftOptional() {
-    return fold(Optional::of, rightValue -> Optional.empty());
-  }
-
-  default Optional<R> rightOptional() {
-    return fold(leftValue -> Optional.empty(), Optional::of);
-  }
+    default Optional<R> rightOptional() {
+        return fold(leftValue -> Optional.empty(), Optional::of);
+    }
 }

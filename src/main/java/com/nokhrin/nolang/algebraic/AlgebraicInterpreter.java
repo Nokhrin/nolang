@@ -9,22 +9,25 @@ import java.util.stream.Collectors;
 
 public interface AlgebraicInterpreter {
 
-  Eval<Value> compile(String source);
+    Eval<Value> compile(String source);
 
-  static AlgebraicInterpreter create() {
-    return source ->
-        AlgebraicSyntaxAnalyzer.parse(source)
-            .fold(
-                syntaxErrors ->
-                    Eval.raiseError(
-                        new EvalError.SyntaxError(
-                            syntaxErrors.stream()
-                                .map(EvalError.SyntaxError::message)
-                                .collect(Collectors.joining(System.lineSeparator())))),
-                tree -> new AlgebraicEvalVisitor().visit(tree));
-  }
+    static AlgebraicInterpreter create() {
+        return source ->
+                AlgebraicSyntaxAnalyzer.parse(source)
+                        .fold(
+                                syntaxErrors ->
+                                        Eval.raiseError(
+                                                new EvalError.SyntaxError(
+                                                        syntaxErrors.stream()
+                                                                .map(EvalError.SyntaxError::message)
+                                                                .collect(
+                                                                        Collectors.joining(
+                                                                                System
+                                                                                        .lineSeparator())))),
+                                tree -> new AlgebraicEvalVisitor().visit(tree));
+    }
 
-  default EvalResult<Value> evaluate(String source, ExecutionContext executionContext) {
-    return compile(source).run(executionContext);
-  }
+    default EvalResult<Value> evaluate(String source, ExecutionContext executionContext) {
+        return compile(source).run(executionContext);
+    }
 }
