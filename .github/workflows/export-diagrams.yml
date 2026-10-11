@@ -1,13 +1,16 @@
 name: Export Diagrams
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'docs/**/*.drawio'
+      - 'docs/**/*.puml'
   pull_request:
     paths:
       - 'docs/**/*.drawio'
+      - 'docs/**/*.puml'
   workflow_dispatch:
+
 jobs:
   export:
     runs-on: ubuntu-latest
@@ -16,19 +19,43 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Export nolang diagrams
+
+      - name: Export drawio diagrams
         uses: rlespinasse/drawio-export-action@v2
         with:
           format: svg
           transparent: true
           output: ${{ github.workspace }}/docs/drawio-assets
           path: ${{ github.workspace }}/docs
-      - name: Upload to Pages
-        uses: actions/upload-pages-artifact@v3
+
+      - name: Setup Java for PlantUML
+        uses: actions/setup-java@v6
         with:
-          path: .
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+          distribution: temurin
+          java-version: '25'
+
+      - name: Export PlantUML diagrams
+        run: |
+          curl -fL -o "$RUNNER_TEMP/plantuml.jar" \
+            https://github.com/plantuml/plantuml/releases/download/v1.2026.8/plantuml-1.2026.8.jar
+          java -jar "$RUNNER_TEMP/plantuml.jar" -tsvg \
+            -o "${{ github.workspace }}/docs/plantuml-assets" \
+            "${{ github.workspace }}"/docs/*.puml
+
+      - name: Assemble site
+        run: |
+          mkdir -p docs/site
+          cp -r docs/drawio-assets/* docs/site/ 2>/dev/null || true
+          cp -r docs/plantuml-assets/* docs/site/ 2>/dev/null || true
+
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/site
+
+      - name: Deploy to Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v5

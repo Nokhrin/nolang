@@ -1,0 +1,35 @@
+name: Build and test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B -ntp clean verify
+
+      - name: CLI smoke test
+        run: |
+          java -jar target/nolang-1.0-SNAPSHOT.jar algebraic src/test/resources/algebraic/cli-test-input.txt > actual.txt
+          diff actual.txt src/test/resources/algebraic/cli-expected-output.txt
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: nolang-coverage-report
+          path: target/site/jacoco/
+          if-no-files-found: ignore
